@@ -3,6 +3,7 @@ import * as CANNON from "cannon-es";
 
 import { instantiatePrefab, type Prefab } from "./Assets.ts";
 import type { Physics } from "./Physics.ts";
+import { Zone, type ZoneDef } from "./Zone.ts";
 
 /**
  * Static ground + a scatter of dynamic obstacles. Obstacles are either random
@@ -19,20 +20,26 @@ export class World {
     visualOffset: THREE.Vector3;
   }> = [];
 
+  private readonly zones: Zone[] = [];
   private readonly sun: THREE.DirectionalLight;
   private readonly sunOffset = new THREE.Vector3(30, 50, 20);
 
-  constructor(physics: Physics, obstaclePrefabs: Prefab[] = []) {
+  constructor(
+    physics: Physics,
+    obstaclePrefabs: Prefab[] = [],
+    zoneDefs: ZoneDef[] = []
+  ) {
     // Sky-ish background + fog to hide the far edge of the ground.
-    this.scene.background = new THREE.Color(0xbfd1e5);
-    this.scene.fog = new THREE.Fog(0xbfd1e5, 60, 220);
+    this.scene.background = new THREE.Color(0xffffff);
+    this.scene.fog = new THREE.Fog(0xffffff, 60, 220);
 
     // Hemisphere fill: sky above, ground bounce below.
     const hemi = new THREE.HemisphereLight(0xdfefff, 0x546b3d, 0.55);
     this.scene.add(hemi);
 
     // Sun. Shadow frustum is repositioned each frame around the car.
-    this.sun = new THREE.DirectionalLight(0xffe9c2, 2.2);
+    this.sun = new THREE.DirectionalLight(0xffe9c2, );
+    
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(2048, 2048);
     const s = 40;
@@ -49,6 +56,12 @@ export class World {
 
     this.buildGround(physics);
     this.buildObstacles(physics, obstaclePrefabs);
+    this.buildZones(zoneDefs);
+  }
+
+  /** Update zone reveal animations against the car's position. */
+  updateZones(dt: number, carPos: THREE.Vector3): void {
+    for (const zone of this.zones) zone.update(dt, carPos);
   }
 
   /** Keep the sun (and its shadow camera) centered on the car. */
@@ -83,7 +96,7 @@ export class World {
     const groundMesh = new THREE.Mesh(
       new THREE.PlaneGeometry(400, 400),
       new THREE.MeshStandardMaterial({
-        color: 0xf2f2f2,
+        color: 0xffffff,
         roughness: 1,
         metalness: 0,
       })
@@ -163,6 +176,14 @@ export class World {
       this.scene.add(mesh);
       physics.world.addBody(body);
       this.dynamicPairs.push({ mesh, body, visualOffset });
+    }
+  }
+
+  private buildZones(defs: ZoneDef[]): void {
+    for (const def of defs) {
+      const zone = new Zone(def);
+      this.zones.push(zone);
+      this.scene.add(zone.group);
     }
   }
 }

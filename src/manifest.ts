@@ -1,4 +1,5 @@
 import type { PrefabDef } from "./Assets.ts";
+import type { ZoneDef } from "./Zone.ts";
 
 /**
  * ============================================================================
@@ -50,3 +51,39 @@ export const PREFABS = {
 } satisfies Record<string, PrefabDef>;
 
 export type PrefabName = keyof typeof PREFABS;
+
+/**
+ * ============================================================================
+ * INFO ZONES
+ * ============================================================================
+ *
+ * Drive the car into a zone and the text reveals on the floor as you enter.
+ * The reveal is smooth: the closer the car gets to the centre, the more the
+ * text fades in and grows.
+ *
+ * Fields:
+ *   - `position` : { x, z } in world metres (Y is always the ground).
+ *   - `radius`   : how close the car must be for the text to start appearing.
+ *                  Also controls the on-floor ring marker size.
+ *   - `text`     : multi-line supported via `\n`.
+ *   - `facing`   : optional Y rotation in radians so the text reads correctly
+ *                  from the intended approach direction.
+ *   - `color`    : optional CSS colour string (default white).
+ */
+export const ZONES: ZoneDef[] = [
+  {
+    position: { x: 0, z: -22 },
+    radius: 7,
+    text: "WELCOME\nTO SIP",
+  },
+  {
+    position: { x: 25, z: 15 },
+    radius: 6,
+    text: "ABOUT\nTHE COLLEGE",
+  },
+  {
+    position: { x: -28, z: 8 },
+    radius: 6,
+    text: "CLUBS &\nACTIVITIES",
+  },
+];

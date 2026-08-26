@@ -4,7 +4,7 @@ import "./style.css";
 import { loadPrefabs } from "./Assets.ts";
 import { Car } from "./Car.ts";
 import { Input } from "./Input.ts";
-import { PREFABS } from "./manifest.ts";
+import { PREFABS, ZONES } from "./manifest.ts";
 import { Physics } from "./Physics.ts";
 import { World } from "./World.ts";
 
@@ -19,7 +19,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+renderer.toneMappingExposure = 1.1;
 document.body.appendChild(renderer.domElement);
 
 // --- prefab loading ------------------------------------------------------
@@ -42,7 +42,7 @@ const obstaclePrefabs = Object.entries(prefabs)
 // --- physics / scene / actors --------------------------------------------
 
 const physics = new Physics();
-const world = new World(physics, obstaclePrefabs);
+const world = new World(physics, obstaclePrefabs, ZONES);
 
 const car = new Car(physics.carMaterial, carPrefab);
 world.scene.add(car.mesh);
@@ -112,6 +112,7 @@ function frame(): void {
   physics.step(dt);
   car.syncMesh();
   world.syncMeshes();
+  world.updateZones(dt, car.mesh.position);
   world.focusOn(car.mesh.position);
 
   car.getForward(tmpForward);
