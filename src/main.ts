@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 import "./style.css";
 import { loadPrefabs } from "./Assets.ts";
@@ -17,12 +18,16 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
+
 // PCFSoft: stochastic soft shadows. Cheaper than VSM (no separate blur pass)
 // and doesn't suffer from VSM's light-bleeding artefact where bright shadow
 // receivers get milky haloes near dark casters.
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+// AgX is a warmer, more filmic curve than ACES. It rolls off highlights
+// gently and keeps saturated colours from clipping to white — gives a
+// natural "golden hour" feel with zero postprocessing cost.
+renderer.toneMapping = THREE.AgXToneMapping;
+renderer.toneMappingExposure = 1.1;
 document.body.appendChild(renderer.domElement);
 
 // --- prefab loading ------------------------------------------------------
@@ -50,6 +55,68 @@ const world = new World(physics, obstaclePrefabs, ZONES);
 const car = new Car(physics.carMaterial, carPrefab);
 world.scene.add(car.mesh);
 physics.world.addBody(car.body);
+
+// --- sky sphere ---------------------------------------------------------
+// Large inverted sphere with a plain sky-blue material. Parented via a
+// per-frame position sync to the camera so you can't drive to "the edge"
+// of it. Renders first (renderOrder = -1) and doesn't write depth so it
+// never occludes real geometry.
+const sky = new THREE.Mesh(
+  new THREE.SphereGeometry(400, 32, 16),
+  new THREE.MeshBasicMaterial({
+    color: 0x87c5ff,
+    side: THREE.BackSide,
+    depthWrite: false,
+    fog: false,
+  })
+);
+sky.renderOrder = -1;
+sky.frustumCulled = false;
+world.scene.add(sky);
+
+// --- static decoration: trees -------------------------------------------
+// Load the tree GLB once, then clone it into a deterministic scatter of
+// positions. Seeded PRNG keeps the layout stable across reloads.
+new GLTFLoader().load("/models/tree.glb", (gltf) => {
+  const template = gltf.scene;
+  // castShadow/receiveShadow only need to be set on the template; clones
+  // inherit these flags because they copy the meshes' properties.
+  template.traverse((child) => {
+    if ((child as THREE.Mesh).isMesh) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
+  });
+
+  const rand = mulberry32(0xdeadbeef);
+  const TREE_COUNT = 15;
+  const MIN_RADIUS = 5; // don't spawn on top of the car
+  const MAX_RADIUS = 90;
+
+  for (let i = 0; i < TREE_COUNT; i++) {
+    const angle = rand() * Math.PI * 2;
+    // sqrt(u) for uniform disc density (otherwise trees pile near the center).
+    const dist = MIN_RADIUS + Math.sqrt(rand()) * (MAX_RADIUS - MIN_RADIUS);
+
+    const tree = template.clone();
+    tree.position.set(Math.cos(angle) * dist, -1, Math.sin(angle) * dist);
+    tree.scale.setScalar(12 + rand() * 2.5); // slight size variation
+    tree.rotation.y = rand() * Math.PI * 2;
+    world.scene.add(tree);
+  }
+});
+
+/** Deterministic PRNG so the tree layout is identical across reloads. */
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
 const camera = new THREE.PerspectiveCamera(
   60,
@@ -126,6 +193,9 @@ function frame(): void {
   );
   camDesiredPos.copy(car.mesh.position).add(tmpOffset);
   camDesiredTarget.copy(car.mesh.position).addScaledVector(tmpForward, CAM_LOOKAHEAD);
+
+  // Keep the sky sphere centered on the camera so you can't reach its edge.
+  sky.position.copy(camera.position);
 
   const posAlpha = 1 - Math.exp(-dt / 0.15);
   const lookAlpha = 1 - Math.exp(-dt / 0.1);

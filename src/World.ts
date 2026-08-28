@@ -30,20 +30,25 @@ export class World {
     zoneDefs: ZoneDef[] = []
   ) {
     // Sky-ish background + fog to hide the far edge of the ground.
-    this.scene.background = new THREE.Color(0xffffff);
-    this.scene.fog = new THREE.Fog(0xffffff, 60, 220);
+    // Warm off-white sky + matching fog. Tinted slightly toward peach so the
+    // horizon reads as "late afternoon" rather than clinical white.
+    this.scene.background = new THREE.Color(0x87c5ff);
+    // this.scene.fog = new THREE.Fog(0xfff1e0, 60, 100);
 
-    // Hemisphere fill: sky above, ground bounce below.
-    const hemi = new THREE.HemisphereLight(0xdfefff, 0x546b3d, 0.85);
+    // Hemisphere fill: warm sky above, cool green ground bounce below. The
+    // sky-vs-ground contrast gives shaded sides a subtle blue-green tint
+    // while lit sides pick up warmth — reads as "outdoor daylight".
+    const hemi = new THREE.HemisphereLight(0xffe4c2, 0x546b3d, 0.85);
     this.scene.add(hemi);
 
-    // Sun. Shadow frustum is repositioned each frame around the car.
-    this.sun = new THREE.DirectionalLight(0xffffff, 2);
+    // Sun. Warm cream tone so shadow / lit contrast leans warm-cool instead
+    // of flat white-vs-grey.
+    this.sun = new THREE.DirectionalLight(0xffddb0, 2);
 
     this.sun.castShadow = true;
     // 1024 is plenty on a 40x40m follow frustum and halves shadow-pass cost
     // vs 2048. Mobile fill-rate savings are significant.
-    this.sun.shadow.mapSize.set(1024, 1024);
+    this.sun.shadow.mapSize.set(2048, 2048);
     // PCFSoft's `radius` scales the softening kernel. Keep it modest —
     // large values start to look noisy on PCF.
     this.sun.shadow.radius = 3;
@@ -106,10 +111,25 @@ export class World {
   }
 
   private buildGround(physics: Physics): void {
+    const size = 400;
+    // One texture tile == 4 metres of world space. Higher tileSize = larger
+    // grass blades (fewer repeats); lower = finer, more repetitive-looking.
+    const tileSize = 4;
+    const repeats = size / tileSize;
+
+    const texture = new THREE.TextureLoader().load("/textures/grass.jpg");
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(repeats, repeats);
+    // sRGB so the JPEG's colours don't come out washed after tone mapping.
+    texture.colorSpace = THREE.SRGBColorSpace;
+    // Sharper mip sampling at oblique grazing angles (near the horizon).
+    texture.anisotropy = 8;
+
     const groundMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(400, 400),
+      new THREE.PlaneGeometry(size, size),
       new THREE.MeshStandardMaterial({
-        color: 0xffffff,
+        map: texture,
         roughness: 1,
         metalness: 0,
       })
