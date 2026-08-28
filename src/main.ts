@@ -89,9 +89,9 @@ new GLTFLoader().load("/models/tree.glb", (gltf) => {
   });
 
   const rand = mulberry32(0xdeadbeef);
-  const TREE_COUNT = 15;
+  const TREE_COUNT = 50;
   const MIN_RADIUS = 5; // don't spawn on top of the car
-  const MAX_RADIUS = 90;
+  const MAX_RADIUS = 120;
 
   for (let i = 0; i < TREE_COUNT; i++) {
     const angle = rand() * Math.PI * 2;

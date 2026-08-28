@@ -1,7 +1,6 @@
 # Student Induction Program Game
 
-![alt text](image.png)
-
+![alt text](image-1.png)
 ## Run
 
 ```sh
