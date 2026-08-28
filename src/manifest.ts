@@ -36,13 +36,13 @@ import type { ZoneDef } from "./Zone.ts";
  */
 export const PREFABS = {
   // --- PLAYER CAR ---------------------------------------------------------
-  // car: {
-  //   model: "/models/car.glb",
-  //   scale: 1,
-  //   // rotation: { y: Math.PI }, // if the model faces +Z instead of -Z
-  //   // visualOffset: { y: -0.3 }, // drop the visual so wheels touch ground
-  //   // collider: { size: { x: 1.5, y: 0.6, z: 2.6 } },
-  // },
+  car: {
+    model: "/models/car.glb",
+    scale: 1,
+    rotation: { y: Math.PI }, // if the model faces +Z instead of -Z
+    visualOffset: { y: -0.3 }, // drop the visual so wheels touch ground
+    collider: { size: { x: 1.5, y: 0.6, z: 2.6 } },
+  },
 
   // --- OBSTACLES (prefix with `obstacle_`) --------------------------------
   // obstacle_rock:   { model: "/models/rock.glb",   scale: 1.2, mass: 8 },

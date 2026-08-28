@@ -34,14 +34,19 @@ export class World {
     this.scene.fog = new THREE.Fog(0xffffff, 60, 220);
 
     // Hemisphere fill: sky above, ground bounce below.
-    const hemi = new THREE.HemisphereLight(0xdfefff, 0x546b3d, 0.55);
+    const hemi = new THREE.HemisphereLight(0xdfefff, 0x546b3d, 0.85);
     this.scene.add(hemi);
 
     // Sun. Shadow frustum is repositioned each frame around the car.
-    this.sun = new THREE.DirectionalLight(0xffe9c2, );
-    
+    this.sun = new THREE.DirectionalLight(0xffffff, 2);
+
     this.sun.castShadow = true;
-    this.sun.shadow.mapSize.set(2048, 2048);
+    // 1024 is plenty on a 40x40m follow frustum and halves shadow-pass cost
+    // vs 2048. Mobile fill-rate savings are significant.
+    this.sun.shadow.mapSize.set(1024, 1024);
+    // PCFSoft's `radius` scales the softening kernel. Keep it modest —
+    // large values start to look noisy on PCF.
+    this.sun.shadow.radius = 3;
     const s = 40;
     this.sun.shadow.camera.left = -s;
     this.sun.shadow.camera.right = s;
@@ -49,13 +54,21 @@ export class World {
     this.sun.shadow.camera.bottom = -s;
     this.sun.shadow.camera.near = 1;
     this.sun.shadow.camera.far = 200;
+    // PCF needs a firmer bias to avoid acne on flat surfaces.
     this.sun.shadow.bias = -0.0004;
     this.sun.shadow.normalBias = 0.02;
     this.scene.add(this.sun);
     this.scene.add(this.sun.target);
 
+    // Cheap fill / rim light from the opposite side of the sun. No shadow
+    // work, low intensity. Its only job is to prevent the shadow-side of
+    // objects from reading as flat grey against the ground.
+    const rim = new THREE.DirectionalLight(0xffffff, 0.35);
+    rim.position.set(-this.sunOffset.x, this.sunOffset.y * 0.6, -this.sunOffset.z);
+    this.scene.add(rim);
+
     this.buildGround(physics);
-    this.buildObstacles(physics, obstaclePrefabs);
+    // this.buildObstacles(physics, obstaclePrefabs);
     this.buildZones(zoneDefs);
   }
 

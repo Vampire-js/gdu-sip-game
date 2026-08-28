@@ -34,6 +34,14 @@ export class Car {
   /** Half-height for spawn placement, derived from the collider size. */
   private readonly halfHeight: number;
 
+  /** Wheel meshes rolled around their local X axis each frame. Populated
+   *  from either the primitive setup or by traversing a prefab for children
+   *  whose name matches `/wheel/i`. */
+  private readonly wheels: THREE.Object3D[] = [];
+
+  /** Radius used to convert car speed to wheel angular velocity. */
+  private readonly wheelRadius: number;
+
   private static readonly DEFAULT_SIZE = { x: 1.5, y: 0.6, z: 2.6 };
 
   constructor(cannonMaterial: CANNON.Material, prefab?: Prefab) {
@@ -47,15 +55,27 @@ export class Car {
       : Car.DEFAULT_SIZE;
     this.halfHeight = size.y / 2;
 
-    // Build visual: cloned prefab template, or a plain white box.
+    // Build visual: cloned prefab template, or a plain white box with wheels.
     if (prefab) {
       this.mesh = instantiatePrefab(prefab);
       // The prefab's collider may be off-center relative to the model origin
       // (e.g. model origin at wheels). To keep the physics body centered on
       // the collider, we render the visual at `bodyPos - colliderOffset`.
       this.visualOffset.copy(prefab.colliderOffset).negate();
+      // Sensible default; if the prefab has a naming convention for its
+      // wheel radius we could pull it from userData later.
+      this.wheelRadius = 0.35;
+      // Auto-detect wheels: any descendant whose name contains "wheel"
+      // (case-insensitive) becomes a rolling wheel. Designer convention:
+      // name wheel meshes `wheel_fl`, `wheel_fr`, `wheel_rl`, `wheel_rr`
+      // (or anything with "wheel" in the name) in the DCC.
+      this.mesh.traverse((child) => {
+        if (/wheel/i.test(child.name)) this.wheels.push(child);
+      });
     } else {
-      const boxMesh = new THREE.Mesh(
+      const group = new THREE.Group();
+
+      const bodyMesh = new THREE.Mesh(
         new THREE.BoxGeometry(size.x, size.y, size.z),
         new THREE.MeshStandardMaterial({
           color: 0xffffff,
@@ -63,9 +83,53 @@ export class Car {
           metalness: 0.1,
         })
       );
-      boxMesh.castShadow = true;
-      boxMesh.receiveShadow = true;
-      this.mesh = boxMesh;
+      bodyMesh.castShadow = true;
+      bodyMesh.receiveShadow = true;
+      group.add(bodyMesh);
+
+      // --- Wheels ---
+      // Cylinder default axis is Y; rotate the geometry once so the axis
+      // aligns with the car's local X (the axle). Rolling then happens by
+      // rotating each wheel mesh around its own X axis.
+      this.wheelRadius = 0.25;
+      const wheelWidth = 0.25;
+      const wheelGeo = new THREE.CylinderGeometry(
+        this.wheelRadius,
+        this.wheelRadius,
+        wheelWidth,
+        20
+      );
+      wheelGeo.rotateZ(Math.PI / 2);
+      const wheelMat = new THREE.MeshStandardMaterial({
+        color: 0x1a1a1a,
+        roughness: 0.9,
+        metalness: 0.05,
+      });
+
+      // Body local frame: origin at box centre, forward = -Z.
+      // Wheel centre Y = -halfHeight + wheelRadius puts the wheel bottom
+      // exactly on the ground when the body is at its rest Y.
+      const wheelY = -size.y / 2 + this.wheelRadius;
+      const wheelX = size.x / 2;
+      const wheelZ = size.z / 2 - this.wheelRadius - 0.15;
+
+      const wheelPositions: Array<[number, number, number]> = [
+        [ wheelX, wheelY, -wheelZ], // front-right (car forward = -Z)
+        [-wheelX, wheelY, -wheelZ], // front-left
+        [ wheelX, wheelY,  wheelZ], // rear-right
+        [-wheelX, wheelY,  wheelZ], // rear-left
+      ];
+
+      for (const [x, y, z] of wheelPositions) {
+        const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+        wheel.position.set(x, y, z);
+        wheel.castShadow = true;
+        wheel.receiveShadow = true;
+        group.add(wheel);
+        this.wheels.push(wheel);
+      }
+
+      this.mesh = group;
     }
 
     this.body = new CANNON.Body({
@@ -114,6 +178,15 @@ export class Car {
 
     const speedNorm = clamp(this.speed / this.maxSpeed, -1, 1);
     this.body.angularVelocity.y = -steer * this.turnRate * speedNorm;
+
+    // Roll wheels: angular velocity = linear velocity / radius. Sign is
+    // negative so that forward car motion (car moves in -Z) rotates the
+    // wheel such that its top moves forward, which is right-hand-rule
+    // negative around the +X axle.
+    if (this.wheels.length > 0) {
+      const wheelDelta = -(this.speed / this.wheelRadius) * dt;
+      for (const w of this.wheels) w.rotation.x += wheelDelta;
+    }
 
     if (throttle !== 0 || steer !== 0 || brake) this.body.wakeUp();
   }

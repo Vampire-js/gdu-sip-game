@@ -17,9 +17,12 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
+// PCFSoft: stochastic soft shadows. Cheaper than VSM (no separate blur pass)
+// and doesn't suffer from VSM's light-bleeding artefact where bright shadow
+// receivers get milky haloes near dark casters.
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.1;
+renderer.toneMappingExposure = 1.05;
 document.body.appendChild(renderer.domElement);
 
 // --- prefab loading ------------------------------------------------------
