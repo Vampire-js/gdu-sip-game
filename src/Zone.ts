@@ -51,9 +51,9 @@ export class Zone {
 
     // --- Ground ring marker (always faintly visible, brightens when active).
     this.ringMaterial = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.15,
+      color: 0x000000,
+      // transparent: true,
+      // opacity: 0.15,
       depthWrite: false,
     });
     this.ringMesh = new THREE.Mesh(
@@ -67,7 +67,7 @@ export class Zone {
     this.group.add(this.ringMesh);
 
     // --- Floor text.
-    const tex = makeTextTexture(def.text, def.color ?? "#ffffff");
+    const tex = makeTextTexture(def.text, def.color ?? "#000000");
     const aspect = tex.image.width / tex.image.height;
     // Fit the text to about 65% of the zone's diameter so it stays inside
     // the ring at max scale. Long text will shrink, short text won't grow
