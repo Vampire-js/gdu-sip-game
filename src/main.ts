@@ -4,6 +4,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import "./style.css";
 import { loadPrefabs } from "./Assets.ts";
 import { Car } from "./Car.ts";
+import { Grass, createGrass } from "./Grass.ts";
 import { Input } from "./Input.ts";
 import { PREFABS, ZONES } from "./manifest.ts";
 import { Physics } from "./Physics.ts";
@@ -55,6 +56,12 @@ const world = new World(physics, obstaclePrefabs, ZONES);
 const car = new Car(physics.carMaterial, carPrefab);
 world.scene.add(car.mesh);
 physics.world.addBody(car.body);
+
+// --- grass --------------------------------------------------------------
+// Placed once at load using the mask at /textures/grass_mask.png.
+// Black in the mask = no grass, white = grass. Grass positions are world-fixed.
+const grass: Grass = await createGrass();
+world.scene.add(grass.mesh);
 
 // --- sky sphere ---------------------------------------------------------
 // Large inverted sphere with a vertical gradient shader. Parented via a
@@ -223,6 +230,7 @@ function frame(): void {
 
   // Keep the sky sphere centered on the camera so you can't reach its edge.
   sky.position.copy(camera.position);
+  grass.update(dt);
 
   const posAlpha = 1 - Math.exp(-dt / 0.15);
   const lookAlpha = 1 - Math.exp(-dt / 0.1);

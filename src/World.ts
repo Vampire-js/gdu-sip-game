@@ -80,7 +80,7 @@ export class World {
     this.scene.add(rim);
 
     this.buildGround(physics);
-    // this.buildObstacles(physics, obstaclePrefabs);
+    this.buildObstacles(physics, obstaclePrefabs);
     this.buildZones(zoneDefs);
   }
 
