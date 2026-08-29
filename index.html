@@ -7,6 +7,16 @@
     <title>sip-game</title>
   </head>
   <body>
+    <style>
+      canvas {
+        /* Warm color grade via CSS filter — free (browser compositor).
+           - sepia(0.25): stronger warm hue shift toward amber
+           - hue-rotate(-8deg): push oranges/reds even warmer (golden hour)
+           - saturate(1.3): recover punch (sepia desaturates, we compensate hard)
+           - contrast(1.1): keep shadows deep so the warmth doesn't wash out */
+        filter: sepia(0.25) hue-rotate(-8deg) saturate(1.3) contrast(1.1);
+      }
+    </style>
     <div id="hud" class="hud">
       <div><strong>WASD</strong> / arrows to drive &middot; <strong>space</strong> to brake &middot; <strong>R</strong> to reset</div>
       <div id="speed">0 km/h</div>

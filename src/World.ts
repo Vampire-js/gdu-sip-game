@@ -32,36 +32,43 @@ export class World {
     // Sky-ish background + fog to hide the far edge of the ground.
     // Warm off-white sky + matching fog. Tinted slightly toward peach so the
     // horizon reads as "late afternoon" rather than clinical white.
-    this.scene.background = new THREE.Color(0x87c5ff);
-    // this.scene.fog = new THREE.Fog(0xfff1e0, 60, 100);
+    this.scene.background = new THREE.Color(0xf3f2ef);
+    this.scene.fog = new THREE.Fog(0x85d2e7, 55,100);
 
-    // Hemisphere fill: warm sky above, cool green ground bounce below. The
-    // sky-vs-ground contrast gives shaded sides a subtle blue-green tint
-    // while lit sides pick up warmth — reads as "outdoor daylight".
-    const hemi = new THREE.HemisphereLight(0xffe4c2, 0x546b3d, 0.85);
+
+    // Hemisphere ambient: warm sky above, cool ground bounce below. Doing
+    // the ambient this way (instead of a flat AmbientLight) gives a natural
+    // top-lit / bottom-shaded look that PBR materials read as "outdoor overcast".
+    const hemi = new THREE.HemisphereLight(0xf3f2ef, 0xffab69, 1.7);
     this.scene.add(hemi);
 
-    // Sun. Warm cream tone so shadow / lit contrast leans warm-cool instead
-    // of flat white-vs-grey.
-    this.sun = new THREE.DirectionalLight(0xffddb0, 2);
-
+    // Sun. Soft warm colour, moderate intensity — the ambient does most of
+    // the work; the sun mainly provides direction and the cast shadow.
+    this.sun = new THREE.DirectionalLight(0xfff1d6, .6);
+    // this.sun.castShadow = true;
     this.sun.castShadow = true;
-    // 1024 is plenty on a 40x40m follow frustum and halves shadow-pass cost
-    // vs 2048. Mobile fill-rate savings are significant.
     this.sun.shadow.mapSize.set(2048, 2048);
     // PCFSoft's `radius` scales the softening kernel. Keep it modest —
     // large values start to look noisy on PCF.
     this.sun.shadow.radius = 3;
-    const s = 40;
+    // Ortho frustum for the sun. `s` is the half-extent in metres, so the
+    // shadow-casting area is `2s x 2s` centred on the sun target (which
+    // tracks the car). Match this to the extent of the visible scene —
+    // trees scatter out to ~90m, so 100 covers them with a small margin.
+    // Wider frustum = less shadow resolution per metre; the 2048 map now
+    // has ~10 px/m instead of ~25. If close-up shadows look too coarse,
+    // switch to CSM (cascaded shadow maps).
+    const s = 100;
     this.sun.shadow.camera.left = -s;
     this.sun.shadow.camera.right = s;
     this.sun.shadow.camera.top = s;
     this.sun.shadow.camera.bottom = -s;
     this.sun.shadow.camera.near = 1;
-    this.sun.shadow.camera.far = 200;
-    // PCF needs a firmer bias to avoid acne on flat surfaces.
+    this.sun.shadow.camera.far = 300;
+    // PCF needs a firmer bias to avoid acne on flat surfaces. Slightly
+    // larger normalBias helps with the coarser texel density.
     this.sun.shadow.bias = -0.0004;
-    this.sun.shadow.normalBias = 0.02;
+    this.sun.shadow.normalBias = 0.05;
     this.scene.add(this.sun);
     this.scene.add(this.sun.target);
 

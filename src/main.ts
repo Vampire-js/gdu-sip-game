@@ -57,17 +57,44 @@ world.scene.add(car.mesh);
 physics.world.addBody(car.body);
 
 // --- sky sphere ---------------------------------------------------------
-// Large inverted sphere with a plain sky-blue material. Parented via a
+// Large inverted sphere with a vertical gradient shader. Parented via a
 // per-frame position sync to the camera so you can't drive to "the edge"
 // of it. Renders first (renderOrder = -1) and doesn't write depth so it
 // never occludes real geometry.
 const sky = new THREE.Mesh(
   new THREE.SphereGeometry(400, 32, 16),
-  new THREE.MeshBasicMaterial({
-    color: 0x87c5ff,
+  new THREE.ShaderMaterial({
     side: THREE.BackSide,
     depthWrite: false,
     fog: false,
+    uniforms: {
+         uHorizon: { value: new THREE.Color(0x85d2e7) },
+      uZenith: { value: new THREE.Color(0x1ab5e0) },// sky blue overhead
+    },
+    vertexShader: /* glsl */ `
+      varying vec3 vDir;
+      void main() {
+        vDir = normalize(position);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: /* glsl */ `
+//  uniform float uTime;
+  // uniform vec3 uSunDir;
+  uniform vec3 uHorizon;
+  uniform vec3 uZenith;
+
+  varying vec3 vDir;
+
+  void main() {
+    // Simple vertical gradient placeholder. Y is up. dir.y ~= 1 at the top,
+    // ~= -1 at the bottom, 0 at the horizon.
+    float t = smoothstep(0.0, 0.5, vDir.y*4.);
+    vec3 col = mix(uHorizon, uZenith, t);
+
+    gl_FragColor = vec4(col, 1.0);
+  }
+    `,
   })
 );
 sky.renderOrder = -1;
@@ -89,7 +116,7 @@ new GLTFLoader().load("/models/tree.glb", (gltf) => {
   });
 
   const rand = mulberry32(0xdeadbeef);
-  const TREE_COUNT = 50;
+  const TREE_COUNT = 35;
   const MIN_RADIUS = 5; // don't spawn on top of the car
   const MAX_RADIUS = 120;
 
@@ -100,7 +127,7 @@ new GLTFLoader().load("/models/tree.glb", (gltf) => {
 
     const tree = template.clone();
     tree.position.set(Math.cos(angle) * dist, -1, Math.sin(angle) * dist);
-    tree.scale.setScalar(12 + rand() * 2.5); // slight size variation
+    tree.scale.setScalar(9 + rand() * 2.5); // slight size variation
     tree.rotation.y = rand() * Math.PI * 2;
     world.scene.add(tree);
   }
@@ -130,7 +157,7 @@ const input = new Input();
 // --- follow-camera state --------------------------------------------------
 
 const CAM_HEIGHT = 4.5;
-const CAM_DISTANCE = 9;
+const CAM_DISTANCE = 8;
 const CAM_LOOKAHEAD = 4;
 
 const camDesiredPos = new THREE.Vector3();
