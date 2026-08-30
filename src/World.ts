@@ -33,7 +33,11 @@ export class World {
     // Warm off-white sky + matching fog. Tinted slightly toward peach so the
     // horizon reads as "late afternoon" rather than clinical white.
     this.scene.background = new THREE.Color(0xf3f2ef);
-    this.scene.fog = new THREE.Fog(0x85d2e7, 55,100);
+    this.scene.fog = new THREE.Fog(
+    0xD99A6C,
+    20,   // near
+    120   // far
+);
 
 
     // Hemisphere ambient: warm sky above, cool ground bounce below. Doing
@@ -118,7 +122,7 @@ export class World {
   }
 
   private buildGround(physics: Physics): void {
-    const size = 400;
+    const size = 300;
     // One texture tile == 4 metres of world space. Higher tileSize = larger
     // grass blades (fewer repeats); lower = finer, more repetitive-looking.
     const tileSize = 4;

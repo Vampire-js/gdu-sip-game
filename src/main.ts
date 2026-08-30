@@ -75,8 +75,8 @@ const sky = new THREE.Mesh(
     depthWrite: false,
     fog: false,
     uniforms: {
-         uHorizon: { value: new THREE.Color(0x85d2e7) },
-      uZenith: { value: new THREE.Color(0x1ab5e0) },// sky blue overhead
+         uHorizon: { value: new THREE.Color(0xFFC05C) },
+      uZenith: { value: new THREE.Color(0xB8756F) },// sky blue overhead
     },
     vertexShader: /* glsl */ `
       varying vec3 vDir;

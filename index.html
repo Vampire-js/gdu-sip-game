@@ -15,20 +15,44 @@
     <title>sip-game</title>
   </head>
   <body>
+    <div class="canvas-wrapper">
     <style>
-      canvas {
-        /* Warm color grade via CSS filter — free (browser compositor).
-           - sepia(0.25): stronger warm hue shift toward amber
-           - hue-rotate(-8deg): push oranges/reds even warmer (golden hour)
-           - saturate(1.3): recover punch (sepia desaturates, we compensate hard)
-           - contrast(1.1): keep shadows deep so the warmth doesn't wash out */
-        filter: sepia(0.25) hue-rotate(-8deg) saturate(1.3) contrast(1.1);
-      }
+/* Base image */
+canvas {
+    filter:
+        brightness(1.0)
+        contrast(1.06)
+        saturate(1.0);
+}
+
+/* Fullscreen grading layer */
+.color-grade {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+
+    background:
+        linear-gradient(
+            to bottom,
+            #FFD080 0%,
+            #F0A044 35%,
+            #B66A32 65%,
+            #70402A 85%,
+            #3A2118 100%
+        );
+
+    mix-blend-mode: soft-light;
+    opacity: 1.5;
+}
+      
     </style>
     <div id="hud" class="hud">
       <div><strong>WASD</strong> / arrows to drive &middot; <strong>space</strong> to brake &middot; <strong>R</strong> to reset</div>
       <div id="speed">0 km/h</div>
     </div>
+    </div>
+    <div class="color-grade"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

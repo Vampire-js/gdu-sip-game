@@ -18,7 +18,7 @@ import * as THREE from "three";
  *   - No per-frame CPU work other than a uniform time tick.
  */
 
-const GROUND_SIZE = 140; // Ground plane extent in metres, centred at origin.
+const GROUND_SIZE = 100; // Ground plane extent in metres, centred at origin.
 const CANDIDATE_COUNT = 5*60000; // Random points tried against the mask.
 const THRESHOLD = 120; // 0..255 — pixel value above this = grass.
 
@@ -90,12 +90,12 @@ export class Grass {
     const bladeCount = positions.length/4;
 
     // --- Base blade geometry: 2-triangle quad in the XY plane ---
-    const bladeW = 0.1;
+    const bladeW = 0.05;
     const bladeH = 1.0;
     const blade = new THREE.PlaneGeometry(bladeW, bladeH, 1, 1);
     blade.translate(0, bladeH / 2, 0); // base at y=0
 
-    // --- Instanced geometry with per-blade offset attribute ---
+    // --- Inswtanced geometry with per-blade offset attribute ---
     const geometry = new THREE.InstancedBufferGeometry();
     geometry.index = blade.index;
     geometry.attributes.position = blade.attributes.position!;
