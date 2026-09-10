@@ -191,6 +191,13 @@ export class Car {
     if (throttle !== 0 || steer !== 0 || brake) this.body.wakeUp();
   }
 
+  /** Follow terrain without reintroducing free vertical bouncing. */
+  setGroundHeight(height: number): void {
+    this.body.position.y = height + this.halfHeight;
+    this.body.velocity.y = 0;
+    this.body.aabbNeedsUpdate = true;
+  }
+
   syncMesh(): void {
     // Apply the body -> visual offset so the model sits where the artist
     // intended even if its origin isn't at the collider center. The offset

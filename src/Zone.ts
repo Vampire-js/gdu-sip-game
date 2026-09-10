@@ -23,6 +23,13 @@ export interface ZoneDef {
   radius: number;
   /** Text to reveal. Use `\n` for line breaks. */
   text: string;
+  /** Optional panel copy, independent of the floor label. */
+  panel?: {
+    title: string;
+    description: string;
+    badge?: string;
+    details?: string[];
+  };
   /**
    * Yaw in radians. Default 0 = text reads correctly when the player
    * approaches from +Z looking toward -Z (default camera direction).

@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { GRASS_MASK } from "./grassMask.ts";
 
 /**
  * Shader-driven grass tufts, placed where a greyscale mask image says they
@@ -18,18 +19,20 @@ import * as THREE from "three";
  *   - No per-frame CPU work other than a uniform time tick.
  */
 
-const GROUND_SIZE = 100; // Ground plane extent in metres, centred at origin.
-const CANDIDATE_COUNT = 5*60000; // Random points tried against the mask.
-const THRESHOLD = 120; // 0..255 — pixel value above this = grass.
+const GROUND_SIZE = GRASS_MASK.size;
+const CANDIDATE_COUNT = 2*60000; // Random points tried against the mask.
+const THRESHOLD = GRASS_MASK.threshold;
 
 // Grass load is async because we have to fetch and decode the mask PNG.
 // The function returns a Promise so main.ts can `await` it (or fire-and-forget
 // and let the mesh pop in when ready).
 export async function createGrass(
-  maskUrl = "/textures/grass_mask.png"
+  maskUrl = GRASS_MASK.url,
+  exclude?: (x: number, z: number) => boolean,
+  candidateCount = CANDIDATE_COUNT
 ): Promise<Grass> {
   const mask = await loadMask(maskUrl);
-  return new Grass(mask);
+  return new Grass(mask, exclude, candidateCount);
 }
 
 interface Mask {
@@ -76,22 +79,23 @@ export class Grass {
     uTime: { value: number };
   };
 
-  constructor(mask: Mask) {
+  constructor(mask: Mask, exclude?: (x: number, z: number) => boolean, candidateCount = CANDIDATE_COUNT) {
     // --- Cull candidates against the mask ---
     // Reject early with a threshold. Pure random distribution: no jitter grid,
     // no poisson, just Math.random() * ground.
     const positions: number[] = []; // flat [x0, z0, yaw0, var0, x1, z1, ...]
-    for (let i = 0; i < CANDIDATE_COUNT; i++) {
+    for (let i = 0; i < candidateCount; i++) {
       const x = (Math.random() - 0.5) * GROUND_SIZE;
       const z = (Math.random() - 0.5) * GROUND_SIZE;
+      if (exclude?.(x, z)) continue;
       if (sampleMask(mask, x, z) <= THRESHOLD) continue;
       positions.push(x, z, Math.random() * Math.PI * 2, Math.random());
     }
     const bladeCount = positions.length/4;
 
     // --- Base blade geometry: 2-triangle quad in the XY plane ---
-    const bladeW = 0.05;
-    const bladeH = 1.0;
+    const bladeW = 0.1;
+    const bladeH = .4;
     const blade = new THREE.PlaneGeometry(bladeW, bladeH, 1, 1);
     blade.translate(0, bladeH / 2, 0); // base at y=0
 

@@ -1,5 +1,6 @@
 import type { PrefabDef } from "./Assets.ts";
 import type { ZoneDef } from "./Zone.ts";
+import { DOMAIN_POINTS, DOMAIN_RADIUS } from "./levelLayout.ts";
 
 /**
  * ============================================================================
@@ -70,20 +71,19 @@ export type PrefabName = keyof typeof PREFABS;
  *                  from the intended approach direction.
  *   - `color`    : optional CSS colour string (default white).
  */
-export const ZONES: ZoneDef[] = [
-  {
-    position: { x: 0, z: -22 },
-    radius: 7,
-    text: "WELCOME\nTO SIP",
-  },
-  {
-    position: { x: 25, z: 15 },
-    radius: 6,
-    text: "ABOUT\nTHE COLLEGE",
-  },
-  {
-    position: { x: -28, z: 8 },
-    radius: 6,
-    text: "CLUBS &\nACTIVITIES",
-  },
+// Replace these placeholder names and descriptions with the actual domains.
+const DOMAIN_CONTENT = [
+  { title: "Domain 1", description: "Welcome to Domain 1. Discover this domain's activities and opportunities here." },
+  { title: "Domain 2", description: "Welcome to Domain 2. Discover this domain's activities and opportunities here." },
+  { title: "Domain 3", description: "Welcome to Domain 3. Discover this domain's activities and opportunities here." },
+  { title: "Domain 4", description: "Welcome to Domain 4. Discover this domain's activities and opportunities here." },
+  { title: "Domain 5", description: "Welcome to Domain 5. Discover this domain's activities and opportunities here." },
 ];
+
+export const ZONES: ZoneDef[] = DOMAIN_POINTS.map((point, index) => ({
+  position: { x: point.x, z: point.z },
+  radius: DOMAIN_RADIUS,
+  facing: point.facing,
+  text: `DOMAIN\n${index + 1}`,
+  panel: { ...DOMAIN_CONTENT[index]!, details: ["Return to the centre to explore another domain."] },
+}));

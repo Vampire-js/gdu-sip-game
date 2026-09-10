@@ -1,0 +1,42 @@
+.start-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+  background: linear-gradient(#342b2240, #342b2290);
+  text-align: center;
+}
+
+.start-screen h1 {
+  margin: 0;
+  max-width: 900px;
+  color: #fff0d5;
+  font: 700 clamp(36px, 8vw, 82px)/1.1 system-ui, sans-serif;
+  letter-spacing: -0.04em;
+  overflow-wrap: anywhere;
+  text-shadow: 0 3px 16px #30231570;
+}
+
+.start-screen button {
+  min-width: 170px;
+  min-height: 56px;
+  padding: 14px 36px;
+  border: 1px solid #fff0d5;
+  border-radius: 999px;
+  background: #f1d3a0;
+  color: #453526;
+  font: 600 20px system-ui, sans-serif;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.start-screen button:hover:not(:disabled) { background: #ffe6ba; }
+.start-screen button:focus-visible { outline: 3px solid #fff4df; outline-offset: 5px; }
+.start-screen button:disabled { opacity: 0.5; cursor: wait; }
+.before-play .hud,
+.before-play .touch-controls,
+.before-play .bowling-panel { display: none !important; }

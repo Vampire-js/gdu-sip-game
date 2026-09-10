@@ -3,7 +3,11 @@ import * as CANNON from "cannon-es";
 
 import { instantiatePrefab, type Prefab } from "./Assets.ts";
 import type { Physics } from "./Physics.ts";
+import { Terrain } from "./Terrain.ts";
+import { GardenFence } from "./GardenFence.ts";
+import { inBowlingArea } from "./Bowling.ts";
 import { Zone, type ZoneDef } from "./Zone.ts";
+import { ZonePanels } from "./ZonePanels.ts";
 
 /**
  * Static ground + a scatter of dynamic obstacles. Obstacles are either random
@@ -12,6 +16,7 @@ import { Zone, type ZoneDef } from "./Zone.ts";
  */
 export class World {
   readonly scene = new THREE.Scene();
+  readonly terrain: Terrain;
   /** Meshes whose transforms must be synced from a physics body each frame. */
   readonly dynamicPairs: Array<{
     mesh: THREE.Object3D;
@@ -21,13 +26,15 @@ export class World {
   }> = [];
 
   private readonly zones: Zone[] = [];
+  private readonly zonePanel: ZonePanels;
   private readonly sun: THREE.DirectionalLight;
   private readonly sunOffset = new THREE.Vector3(30, 50, 20);
 
   constructor(
     physics: Physics,
     obstaclePrefabs: Prefab[] = [],
-    zoneDefs: ZoneDef[] = []
+    zoneDefs: ZoneDef[] = [],
+    enableObstacles = false
   ) {
     // Sky-ish background + fog to hide the far edge of the ground.
     // Warm off-white sky + matching fog. Tinted slightly toward peach so the
@@ -35,7 +42,7 @@ export class World {
     this.scene.background = new THREE.Color(0xf3f2ef);
     this.scene.fog = new THREE.Fog(
     0xD99A6C,
-    20,   // near
+    50,   // near
     120   // far
 );
 
@@ -83,14 +90,21 @@ export class World {
     rim.position.set(-this.sunOffset.x, this.sunOffset.y * 0.6, -this.sunOffset.z);
     this.scene.add(rim);
 
-    this.buildGround(physics);
-    this.buildObstacles(physics, obstaclePrefabs);
+    this.terrain = new Terrain(physics.groundMaterial);
+    this.scene.add(this.terrain.mesh, this.terrain.water);
+    physics.world.addBody(this.terrain.body);
+    const fence = new GardenFence(this.terrain, physics);
+    this.scene.add(fence.group);
+    if (enableObstacles) this.buildObstacles(physics, obstaclePrefabs);
     this.buildZones(zoneDefs);
+    this.zonePanel = new ZonePanels(zoneDefs);
+    this.scene.add(this.zonePanel.group);
   }
 
   /** Update zone reveal animations against the car's position. */
   updateZones(dt: number, carPos: THREE.Vector3): void {
     for (const zone of this.zones) zone.update(dt, carPos);
+    this.zonePanel.update(dt, carPos);
   }
 
   /** Keep the sun (and its shadow camera) centered on the car. */
@@ -119,43 +133,6 @@ export class World {
       );
       mesh.quaternion.copy(q);
     }
-  }
-
-  private buildGround(physics: Physics): void {
-    const size = 300;
-    // One texture tile == 4 metres of world space. Higher tileSize = larger
-    // grass blades (fewer repeats); lower = finer, more repetitive-looking.
-    const tileSize = 4;
-    const repeats = size / tileSize;
-
-    const texture = new THREE.TextureLoader().load("/textures/grass.jpg");
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-    texture.repeat.set(repeats, repeats);
-    // sRGB so the JPEG's colours don't come out washed after tone mapping.
-    texture.colorSpace = THREE.SRGBColorSpace;
-    // Sharper mip sampling at oblique grazing angles (near the horizon).
-    texture.anisotropy = 8;
-
-    const groundMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(size, size),
-      new THREE.MeshStandardMaterial({
-        map: texture,
-        roughness: 1,
-        metalness: 0,
-      })
-    );
-    groundMesh.rotation.x = -Math.PI / 2;
-    groundMesh.receiveShadow = true;
-    this.scene.add(groundMesh);
-
-    const groundBody = new CANNON.Body({
-      mass: 0,
-      shape: new CANNON.Plane(),
-      material: physics.groundMaterial,
-    });
-    groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
-    physics.world.addBody(groundBody);
   }
 
   private buildObstacles(physics: Physics, prefabs: Prefab[]): void {
@@ -201,6 +178,14 @@ export class World {
         mesh = boxMesh;
       }
 
+      // Keep the original seeded layout, but omit boxes outside the island
+      // or overlapping the activity lane. Allow room for the rotated box.
+      const x = Math.cos(angle) * dist;
+      const z = Math.sin(angle) * dist;
+      const yaw = rand() * Math.PI;
+      const margin = Math.hypot(sizeX, sizeZ) / 2;
+      if (!this.terrain.isFlatLand(x, z, margin) || inBowlingArea(x, z, margin)) continue;
+
       const body = new CANNON.Body({
         mass,
         shape: new CANNON.Box(
@@ -215,7 +200,7 @@ export class World {
         angularDamping: 0.2,
         material: physics.obstacleMaterial,
       });
-      body.quaternion.setFromEuler(0, rand() * Math.PI, 0);
+      body.quaternion.setFromEuler(0, yaw, 0);
 
       this.scene.add(mesh);
       physics.world.addBody(body);

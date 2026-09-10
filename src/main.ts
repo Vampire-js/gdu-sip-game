@@ -2,21 +2,32 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 import "./style.css";
+import "./bowling.css";
 import { loadPrefabs } from "./Assets.ts";
 import { Car } from "./Car.ts";
+import { Bowling, inBowlingArea } from "./Bowling.ts";
 import { Grass, createGrass } from "./Grass.ts";
+import { Flowers } from "./Flowers.ts";
+import { Rocks } from "./Rocks.ts";
 import { Input } from "./Input.ts";
 import { PREFABS, ZONES } from "./manifest.ts";
 import { Physics } from "./Physics.ts";
 import { World } from "./World.ts";
+import { isOnLevelPath } from "./levelLayout.ts";
+import { StartScreen } from "./StartScreen.ts";
+import { GAME_CONFIG } from "./gameConfig.ts";
+
+const startScreen = new StartScreen(GAME_CONFIG);
 
 // --- renderer -------------------------------------------------------------
 
+// Touch capability is a conservative budget hint, not a GPU benchmark.
+const touchBudget = window.matchMedia("(any-pointer: coarse)").matches;
 const renderer = new THREE.WebGLRenderer({
   antialias: true,
   powerPreference: "high-performance",
 });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, touchBudget ? 1.5 : 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 
@@ -52,16 +63,38 @@ const obstaclePrefabs = Object.entries(prefabs)
 
 const physics = new Physics();
 const world = new World(physics, obstaclePrefabs, ZONES);
+const rocks = new Rocks(world.terrain, ZONES);
+world.scene.add(rocks.mesh);
 
 const car = new Car(physics.carMaterial, carPrefab);
 world.scene.add(car.mesh);
 physics.world.addBody(car.body);
 
+const bowling = new Bowling(physics);
+world.scene.add(bowling.group);
+const bowlingPanel = document.createElement("div");
+bowlingPanel.className = "bowling-panel";
+bowlingPanel.hidden = true;
+bowlingPanel.innerHTML = `<strong>Bowling</strong>
+  <span>Push the blue ball toward the pins.</span>
+  <button type="button" disabled>Reset bowling</button>`;
+document.body.appendChild(bowlingPanel);
+bowlingPanel.querySelector("button")!.addEventListener("click", () => {
+  // Move the car clear before restoring the ball and pins.
+  car.reset();
+  car.syncMesh();
+  snapCameraBehindCar();
+  bowling.reset();
+});
+
 // --- grass --------------------------------------------------------------
 // Placed once at load using the mask at /textures/grass_mask.png.
 // Black in the mask = no grass, white = grass. Grass positions are world-fixed.
-const grass: Grass = await createGrass();
+const grass: Grass = await createGrass(undefined, (x, z) =>
+  inBowlingArea(x, z) || !world.terrain.isFlatLand(x, z), touchBudget ? 60_000 : undefined);
 world.scene.add(grass.mesh);
+const flowers = new Flowers(grass.mesh.geometry, touchBudget ? 90*2 : 2*180);
+world.scene.add(flowers.group);
 
 // --- sky sphere ---------------------------------------------------------
 // Large inverted sphere with a vertical gradient shader. Parented via a
@@ -77,6 +110,7 @@ const sky = new THREE.Mesh(
     uniforms: {
          uHorizon: { value: new THREE.Color(0xFFC05C) },
       uZenith: { value: new THREE.Color(0xB8756F) },// sky blue overhead
+      uSunDirection: { value: new THREE.Vector3(0.55, 0.16, -1).normalize() },
     },
     vertexShader: /* glsl */ `
       varying vec3 vDir;
@@ -90,6 +124,7 @@ const sky = new THREE.Mesh(
   // uniform vec3 uSunDir;
   uniform vec3 uHorizon;
   uniform vec3 uZenith;
+  uniform vec3 uSunDirection;
 
   varying vec3 vDir;
 
@@ -98,6 +133,14 @@ const sky = new THREE.Mesh(
     // ~= -1 at the bottom, 0 at the horizon.
     float t = smoothstep(0.0, 0.5, vDir.y*4.);
     vec3 col = mix(uHorizon, uZenith, t);
+
+    // A low sunset disc with a broad halo, all in the existing sky draw.
+    vec3 direction = normalize(vDir);
+    float alignment = clamp(dot(direction, uSunDirection), 0.0, 1.0);
+    float halo = pow(alignment, 32.0) * 0.3;
+    col = mix(col, vec3(1.0, 0.60, 0.24), halo);
+    float disc = smoothstep(cos(0.055), cos(0.049), alignment);
+    col = mix(col, vec3(1.0, 0.88, 0.57), disc);
 
     gl_FragColor = vec4(col, 1.0);
   }
@@ -123,22 +166,45 @@ new GLTFLoader().load("/models/tree.glb", (gltf) => {
   });
 
   const rand = mulberry32(0xdeadbeef);
-  const TREE_COUNT = 35;
+  const TREE_COUNT = 10;
   const MIN_RADIUS = 5; // don't spawn on top of the car
-  const MAX_RADIUS = 120;
+  const MAX_RADIUS = 50;
 
-  for (let i = 0; i < TREE_COUNT; i++) {
+  const bounds = new THREE.Box3();
+  let placed = 0;
+  for (let attempt = 0; attempt < TREE_COUNT * 50 && placed < TREE_COUNT; attempt++) {
     const angle = rand() * Math.PI * 2;
-    // sqrt(u) for uniform disc density (otherwise trees pile near the center).
-    const dist = MIN_RADIUS + Math.sqrt(rand()) * (MAX_RADIUS - MIN_RADIUS);
+    // Uniform area distribution within the spawn annulus.
+    const dist = Math.sqrt(MIN_RADIUS ** 2 + rand() * (MAX_RADIUS ** 2 - MIN_RADIUS ** 2));
+    const x = Math.cos(angle) * dist;
+    const z = Math.sin(angle) * dist;
+    if (inBowlingArea(x, z, 8) || !world.terrain.isFlatLand(x, z, 4) ||
+      ZONES.some((zone) => Math.hypot(x - zone.position.x, z - zone.position.z) < zone.radius + 3)) continue;
 
     const tree = template.clone();
-    tree.position.set(Math.cos(angle) * dist, -1, Math.sin(angle) * dist);
-    tree.scale.setScalar(9 + rand() * 2.5); // slight size variation
+    tree.position.set(x, 0, z);
+    tree.scale.setScalar(5 + rand() * 2.5); // slight size variation
     tree.rotation.y = rand() * Math.PI * 2;
+    tree.updateMatrixWorld(true);
+    bounds.setFromObject(tree);
+    if (bounds.isEmpty()) continue;
+    // This GLB was exported away from its origin. Align its visible bounds
+    // with the chosen island location, not just the parent object's position.
+    tree.position.x += x - (bounds.min.x + bounds.max.x) / 2;
+    tree.position.z += z - (bounds.min.z + bounds.max.z) / 2;
+    tree.position.y += world.terrain.getHeight(x, z) - bounds.min.y;
+    tree.updateMatrixWorld(true);
+    bounds.setFromObject(tree);
+    const footprint = Math.max(bounds.max.x - bounds.min.x, bounds.max.z - bounds.min.z) / 2;
+    if (!world.terrain.isFlatLand(x, z, footprint + 2) ||
+      isOnLevelPath(x, z, footprint) ||
+      inBowlingArea(x, z, footprint) ||
+      ZONES.some((zone) => Math.hypot(x - zone.position.x, z - zone.position.z) < zone.radius + footprint)) continue;
     world.scene.add(tree);
+    placed++;
   }
-});
+  if (placed < TREE_COUNT) console.warn(`[trees] Placed ${placed}/${TREE_COUNT} trees on dry land.`);
+}, undefined, (error) => console.warn("[trees] Could not load tree model:", error));
 
 /** Deterministic PRNG so the tree layout is identical across reloads. */
 function mulberry32(seed: number): () => number {
@@ -159,7 +225,8 @@ const camera = new THREE.PerspectiveCamera(
   500
 );
 
-const input = new Input();
+// No keyboard listeners or touch buttons until the player starts.
+let input: Input | null = null;
 
 // --- follow-camera state --------------------------------------------------
 
@@ -183,6 +250,7 @@ function snapCameraBehindCar(): void {
 car.syncMesh();
 world.focusOn(car.mesh.position);
 snapCameraBehindCar();
+bowlingPanel.querySelector("button")!.disabled = false;
 
 // --- HUD ------------------------------------------------------------------
 
@@ -209,12 +277,30 @@ let hudTick = 0;
 function frame(): void {
   const dt = Math.min(clock.getDelta(), 1 / 30);
 
+  if (!input) {
+    world.syncMeshes();
+    sky.position.copy(camera.position);
+    grass.update(dt);
+    renderer.render(world.scene, camera);
+    return;
+  }
+
   input.update();
   if (input.consumeReset()) car.reset();
 
   car.update(dt, input.state.throttle, input.state.steer, input.state.brake);
+  car.setGroundHeight(world.terrain.getHeight(car.body.position.x, car.body.position.z));
   physics.step(dt);
+  const returnedFromWater = !world.terrain.isSafeForCar(car.body.position.x, car.body.position.z);
+  if (returnedFromWater) car.reset();
+  car.setGroundHeight(world.terrain.getHeight(car.body.position.x, car.body.position.z));
+  bowling.syncMeshes();
   car.syncMesh();
+  const showBowlingPanel = inBowlingArea(car.body.position.x, car.body.position.z);
+  if (bowlingPanel.hidden === showBowlingPanel) {
+    bowlingPanel.hidden = !showBowlingPanel;
+  }
+  if (returnedFromWater) snapCameraBehindCar();
   world.syncMeshes();
   world.updateZones(dt, car.mesh.position);
   world.focusOn(car.mesh.position);
@@ -249,6 +335,10 @@ function frame(): void {
 }
 
 renderer.setAnimationLoop(frame);
+startScreen.ready(() => {
+  clock.getDelta(); // Discard time spent on the title screen.
+  input = new Input();
+});
 
 // --- helpers -------------------------------------------------------------
 

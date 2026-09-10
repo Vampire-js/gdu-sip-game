@@ -1,0 +1,33 @@
+.bowling-panel {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  right: max(12px, env(safe-area-inset-right));
+  z-index: 15;
+  display: grid;
+  gap: 6px;
+  max-width: 220px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #17232de6;
+  color: #fff;
+  font: 13px/1.4 system-ui, sans-serif;
+}
+
+.bowling-panel[hidden] {
+  display: none !important;
+}
+
+.bowling-panel button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 6px;
+  background: #e8bd83;
+  color: #201a13;
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+@media (max-width: 600px) {
+  .bowling-panel { top: max(82px, env(safe-area-inset-top)); max-width: 170px; }
+}
