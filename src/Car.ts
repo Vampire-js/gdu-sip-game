@@ -4,10 +4,8 @@ import * as CANNON from "cannon-es";
 import { instantiatePrefab, type Prefab } from "./Assets.ts";
 
 /**
- * Minimal car: one white box (or a designer-supplied prefab visual) plus a
- * box rigid body. Motion is arcade-style — we overwrite XZ velocity and Y
- * angular velocity directly, but obstacle collisions are solved by cannon so
- * blocks scatter naturally.
+ * Arcade car with a chamfered box collider. Driving uses the solver's actual
+ * velocity each fixed step, so impacts reduce speed rather than being undone.
  *
  * Convention: local -Z is forward.
  */
@@ -26,6 +24,12 @@ export class Car {
   readonly turnRate = 2.6;
 
   private speed = 0;
+  private readonly previousPosition = new THREE.Vector3();
+  private readonly previousRotation = new THREE.Quaternion();
+  private readonly renderRotation = new THREE.Quaternion();
+  private readonly rotatedOffset = new THREE.Vector3();
+  private readonly forward = new CANNON.Vec3();
+  private readonly localForward = new CANNON.Vec3(0, 0, -1);
 
   /** Visual offset from body position to mesh position (from the prefab).
    *  Zero when using the primitive fallback. */
@@ -134,7 +138,7 @@ export class Car {
 
     this.body = new CANNON.Body({
       mass: 150,
-      shape: new CANNON.Box(new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2)),
+      shape: createCarCollider(size),
       // Spawn at exact rest height. Y is locked (see linearFactor below), so
       // this becomes the car's permanent Y.
       position: new CANNON.Vec3(0, this.halfHeight, 0),
@@ -142,7 +146,7 @@ export class Car {
       // scalar `speed` (which has its own coastDecel). Extra damping here
       // just makes the car feel sluggish and unresponsive.
       linearDamping: 0,
-      angularDamping: 0.9,
+      angularDamping: 0,
       material: cannonMaterial,
     });
     // Keep the car upright: only allow yaw. Prevents flipping while still
@@ -153,9 +157,21 @@ export class Car {
     // zeroed by the solver, so the car glides on a fixed plane while still
     // receiving X/Z collision impulses from obstacles.
     this.body.linearFactor.set(1, 0, 1);
+    this.capturePreviousPose();
+  }
+
+  capturePreviousPose(): void {
+    this.previousPosition.copy(this.body.position);
+    this.previousRotation.copy(this.body.quaternion);
   }
 
   update(dt: number, throttle: number, steer: number, brake: boolean): void {
+    this.body.quaternion.vmult(this.localForward, this.forward);
+    const forward = this.forward;
+    this.speed = this.body.velocity.x * forward.x + this.body.velocity.z * forward.z;
+    // Retain sideways impact motion, then gradually restore tyre grip.
+    const lateralX = this.body.velocity.x - forward.x * this.speed;
+    const lateralZ = this.body.velocity.z - forward.z * this.speed;
     if (brake) {
       const dv = this.brakeDecel * dt;
       if (this.speed > 0) this.speed = Math.max(0, this.speed - dv);
@@ -169,15 +185,13 @@ export class Car {
       else if (this.speed < 0) this.speed = Math.min(0, this.speed + dv);
     }
 
-    const forward = new CANNON.Vec3();
-    this.body.quaternion.vmult(new CANNON.Vec3(0, 0, -1), forward);
-
-    // Overwrite XZ velocity; leave Y to the solver (gravity + contact).
-    this.body.velocity.x = forward.x * this.speed;
-    this.body.velocity.z = forward.z * this.speed;
+    const grip = Math.exp(-12 * dt);
+    this.body.velocity.x = forward.x * this.speed + lateralX * grip;
+    this.body.velocity.z = forward.z * this.speed + lateralZ * grip;
 
     const speedNorm = clamp(this.speed / this.maxSpeed, -1, 1);
-    this.body.angularVelocity.y = -steer * this.turnRate * speedNorm;
+    const desiredYaw = -steer * this.turnRate * speedNorm;
+    this.body.angularVelocity.y += (desiredYaw - this.body.angularVelocity.y) * (1 - Math.exp(-18 * dt));
 
     // Roll wheels: angular velocity = linear velocity / radius. Sign is
     // negative so that forward car motion (car moves in -Z) rotates the
@@ -198,41 +212,21 @@ export class Car {
     this.body.aabbNeedsUpdate = true;
   }
 
-  syncMesh(): void {
-    // Apply the body -> visual offset so the model sits where the artist
-    // intended even if its origin isn't at the collider center. The offset
-    // itself must respect the car's yaw so it stays consistent as we turn.
-    const rotatedOffset = this.visualOffset
-      .clone()
-      .applyQuaternion(
-        new THREE.Quaternion(
-          this.body.quaternion.x,
-          this.body.quaternion.y,
-          this.body.quaternion.z,
-          this.body.quaternion.w
-        )
-      );
-    this.mesh.position.set(
-      this.body.position.x + rotatedOffset.x,
-      this.body.position.y + rotatedOffset.y,
-      this.body.position.z + rotatedOffset.z
-    );
-    this.mesh.quaternion.set(
-      this.body.quaternion.x,
-      this.body.quaternion.y,
-      this.body.quaternion.z,
-      this.body.quaternion.w
-    );
+  syncMesh(alpha = 1): void {
+    this.renderRotation.copy(this.body.quaternion);
+    this.mesh.quaternion.copy(this.previousRotation).slerp(this.renderRotation, alpha);
+    this.rotatedOffset.copy(this.visualOffset).applyQuaternion(this.mesh.quaternion);
+    this.mesh.position.copy(this.body.position).lerp(this.previousPosition, 1 - alpha)
+      .add(this.rotatedOffset);
   }
 
   getForward(target: THREE.Vector3): THREE.Vector3 {
-    const v = new CANNON.Vec3();
-    this.body.quaternion.vmult(new CANNON.Vec3(0, 0, -1), v);
-    return target.set(v.x, 0, v.z).normalize();
+    return target.set(0, 0, -1).applyQuaternion(this.mesh.quaternion).setY(0).normalize();
   }
 
   getSpeed(): number {
-    return this.speed;
+    this.body.quaternion.vmult(this.localForward, this.forward);
+    return this.body.velocity.x * this.forward.x + this.body.velocity.z * this.forward.z;
   }
 
   reset(): void {
@@ -241,10 +235,36 @@ export class Car {
     this.body.velocity.set(0, 0, 0);
     this.body.angularVelocity.set(0, 0, 0);
     this.body.quaternion.set(0, 0, 0, 1);
+    this.body.previousPosition.copy(this.body.position);
+    this.body.interpolatedPosition.copy(this.body.position);
+    this.body.previousQuaternion.copy(this.body.quaternion);
+    this.body.interpolatedQuaternion.copy(this.body.quaternion);
+    this.body.force.setZero();
+    this.body.torque.setZero();
+    this.body.aabbNeedsUpdate = true;
+    this.capturePreviousPose();
     this.body.wakeUp();
   }
 }
 
 function clamp(v: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, v));
+}
+
+/** Same full extents as the manifest box, with clipped XZ corners to slide
+ * past posts. One hull avoids overlapping compound-shape contact impulses. */
+function createCarCollider(size: { x: number; y: number; z: number }): CANNON.ConvexPolyhedron {
+  const x = size.x / 2, y = size.y / 2, z = size.z / 2;
+  const bevel = Math.min(size.x, size.z) * 0.18;
+  const outline = [
+    [-x + bevel, -z], [x - bevel, -z], [x, -z + bevel], [x, z - bevel],
+    [x - bevel, z], [-x + bevel, z], [-x, z - bevel], [-x, -z + bevel],
+  ];
+  const vertices = [-y, y].flatMap((height) => outline.map(([px, pz]) => new CANNON.Vec3(px!, height, pz!)));
+  const faces = [Array.from({ length: 8 }, (_, i) => i), Array.from({ length: 8 }, (_, i) => 15 - i)];
+  for (let i = 0; i < 8; i++) {
+    const next = (i + 1) % 8;
+    faces.push([i, i + 8, next + 8, next]);
+  }
+  return new CANNON.ConvexPolyhedron({ vertices, faces });
 }

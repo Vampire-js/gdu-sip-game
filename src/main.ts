@@ -70,7 +70,11 @@ const car = new Car(physics.carMaterial, carPrefab);
 world.scene.add(car.mesh);
 physics.world.addBody(car.body);
 
-const bowling = new Bowling(physics);
+const bowling = new Bowling(physics, false, {
+  pin: prefabs["bowling_pin"],
+  ball: prefabs["bowling_ball"],
+  lane: prefabs["bowling_lane"],
+});
 world.scene.add(bowling.group);
 const bowlingPanel = document.createElement("div");
 bowlingPanel.className = "bowling-panel";
@@ -91,9 +95,9 @@ bowlingPanel.querySelector("button")!.addEventListener("click", () => {
 // Placed once at load using the mask at /textures/grass_mask.png.
 // Black in the mask = no grass, white = grass. Grass positions are world-fixed.
 const grass: Grass = await createGrass(undefined, (x, z) =>
-  inBowlingArea(x, z) || !world.terrain.isFlatLand(x, z), touchBudget ? 60_000 : undefined);
+  inBowlingArea(x, z) || !world.terrain.isFlatLand(x, z), touchBudget ? 60_000*2 : undefined);
 world.scene.add(grass.mesh);
-const flowers = new Flowers(grass.mesh.geometry, touchBudget ? 90*2 : 2*180);
+const flowers = new Flowers(grass.mesh.geometry, touchBudget ? 90*6 : 2*180);
 world.scene.add(flowers.group);
 
 // --- sky sphere ---------------------------------------------------------
@@ -273,9 +277,25 @@ window.visualViewport?.addEventListener("resize", onResize);
 
 const clock = new THREE.Clock();
 let hudTick = 0;
+let returnedFromWater = false;
+
+function beforeCarStep(dt: number): void {
+  if (!input) return;
+  car.capturePreviousPose();
+  car.setGroundHeight(world.terrain.getHeight(car.body.position.x, car.body.position.z));
+  car.update(dt, input.state.throttle, input.state.steer, input.state.brake);
+}
+
+function afterCarStep(): void {
+  if (!world.terrain.isSafeForCar(car.body.position.x, car.body.position.z)) {
+    car.reset();
+    returnedFromWater = true;
+  }
+  car.setGroundHeight(world.terrain.getHeight(car.body.position.x, car.body.position.z));
+}
 
 function frame(): void {
-  const dt = Math.min(clock.getDelta(), 1 / 30);
+  const dt = Math.min(clock.getDelta(), 1 / 15);
 
   if (!input) {
     world.syncMeshes();
@@ -288,14 +308,10 @@ function frame(): void {
   input.update();
   if (input.consumeReset()) car.reset();
 
-  car.update(dt, input.state.throttle, input.state.steer, input.state.brake);
-  car.setGroundHeight(world.terrain.getHeight(car.body.position.x, car.body.position.z));
-  physics.step(dt);
-  const returnedFromWater = !world.terrain.isSafeForCar(car.body.position.x, car.body.position.z);
-  if (returnedFromWater) car.reset();
-  car.setGroundHeight(world.terrain.getHeight(car.body.position.x, car.body.position.z));
+  returnedFromWater = false;
+  const alpha = physics.step(dt, beforeCarStep, afterCarStep);
   bowling.syncMeshes();
-  car.syncMesh();
+  car.syncMesh(alpha);
   const showBowlingPanel = inBowlingArea(car.body.position.x, car.body.position.z);
   if (bowlingPanel.hidden === showBowlingPanel) {
     bowlingPanel.hidden = !showBowlingPanel;

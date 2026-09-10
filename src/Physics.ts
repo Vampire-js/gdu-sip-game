@@ -13,6 +13,7 @@ export class Physics {
 
   private readonly fixedStep = 1 / 60;
   private readonly maxSubSteps = 4;
+  private accumulator = 0;
 
   constructor() {
     this.world = new CANNON.World({
@@ -34,11 +35,11 @@ export class Physics {
       })
     );
 
-    // Car vs obstacle: some bounce and slide so hits feel arcadey.
+    // Low-friction, non-bouncy car contacts slide past fences and pins.
     this.world.addContactMaterial(
       new CANNON.ContactMaterial(this.carMaterial, this.obstacleMaterial, {
-        friction: 0.3,
-        restitution: 0.2,
+        friction: 0.08,
+        restitution: 0,
       })
     );
 
@@ -51,7 +52,18 @@ export class Physics {
     );
   }
 
-  step(dt: number): void {
-    this.world.step(this.fixedStep, dt, this.maxSubSteps);
+  /** Returns the render interpolation fraction. Controls run BEFORE solving
+   * contacts on every substep, not once per display frame. */
+  step(dt: number, beforeStep?: (dt: number) => void, afterStep?: () => void): number {
+    this.accumulator += Math.max(0, Math.min(dt, this.fixedStep * this.maxSubSteps));
+    let steps = 0;
+    while (this.accumulator + 1e-10 >= this.fixedStep && steps < this.maxSubSteps) {
+      beforeStep?.(this.fixedStep);
+      this.world.step(this.fixedStep);
+      afterStep?.();
+      this.accumulator = Math.max(0, this.accumulator - this.fixedStep);
+      steps++;
+    }
+    return this.accumulator / this.fixedStep;
   }
 }

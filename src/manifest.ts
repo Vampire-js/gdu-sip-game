@@ -39,11 +39,34 @@ export const PREFABS = {
   // --- PLAYER CAR ---------------------------------------------------------
   car: {
     model: "/models/car.glb",
-    scale: 1,
+    scale: 1.2,
     rotation: { y: Math.PI }, // if the model faces +Z instead of -Z
     visualOffset: { y: -0.3 }, // drop the visual so wheels touch ground
-    collider: { size: { x: 1.5, y: 0.6, z: 2.6 } },
+    collider: { size: { x: 2.5, y: 0.6, z: 4 } },
   },
+
+  // --- BOWLING: uncomment each model independently -----------------------
+  // Visual replacements only: fixed physics stays unchanged.
+  // Scale models to these WORLD dimensions (metres):
+  // pin: 0.55 x 1.5 x 0.55; ball: diameter 1.3; lane: 8 wide x 24 long.
+  // Lane length runs along Z; pins are at the -Z end. Keep its surface near Y=0.
+  // Auto bounds centre each model, including assets exported off-origin.
+  // scale, rotation, visualOffset and collider settings work as for the car;
+  // here collider bounds control visual alignment, NOT collision size or mass.
+  // With auto bounds, visualOffset is absorbed by centering. For a deliberate
+  // offset, set collider.size and collider.offset explicitly (centre = 0 by default).
+  bowling_pin: {
+    model: "/models/pin.glb",
+    scale: 0.8,
+  },
+  bowling_ball: {
+    model: "/models/ball.glb",
+    scale: 0.7,
+  },
+  // bowling_lane: {
+  //   model: "/models/bowling-lane.glb",
+  //   scale: 1,
+  // },
 
   // --- OBSTACLES (prefix with `obstacle_`) --------------------------------
   // obstacle_rock:   { model: "/models/rock.glb",   scale: 1.2, mass: 8 },

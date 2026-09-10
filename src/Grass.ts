@@ -94,8 +94,8 @@ export class Grass {
     const bladeCount = positions.length/4;
 
     // --- Base blade geometry: 2-triangle quad in the XY plane ---
-    const bladeW = 0.1;
-    const bladeH = .4;
+    const bladeW = 0.23;
+    const bladeH = .8;
     const blade = new THREE.PlaneGeometry(bladeW, bladeH, 1, 1);
     blade.translate(0, bladeH / 2, 0); // base at y=0
 

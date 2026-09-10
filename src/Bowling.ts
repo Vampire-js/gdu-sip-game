@@ -2,6 +2,23 @@ import * as THREE from "three";
 import * as CANNON from "cannon-es";
 import type { Physics } from "./Physics.ts";
 import { BOWLING_CENTER } from "./levelLayout.ts";
+import { instantiatePrefab, type Prefab } from "./Assets.ts";
+
+export interface BowlingPrefabs {
+  pin?: Prefab;
+  ball?: Prefab;
+  lane?: Prefab;
+}
+
+/** Centre the visual using the prefab's configured/derived collider bounds.
+ * The wrapper receives the physics transform; model-local edits stay intact. */
+function bowlingVisual(prefab: Prefab): THREE.Group {
+  const root = new THREE.Group();
+  const model = instantiatePrefab(prefab);
+  model.position.sub(prefab.colliderOffset);
+  root.add(model);
+  return root;
+}
 
 const CENTER = BOWLING_CENTER;
 
@@ -22,7 +39,7 @@ export class Bowling {
   readonly group = new THREE.Group();
   private readonly actors: Actor[] = [];
 
-  constructor(physics: Physics, enableRails = false) {
+  constructor(physics: Physics, enableRails = false, prefabs: BowlingPrefabs = {}) {
     const laneMaterial = new THREE.MeshStandardMaterial({ color: 0xcba77b, roughness: 0.7 });
     const railMaterial = new THREE.MeshStandardMaterial({ color: 0x454b53, roughness: 0.8 });
     const pinMaterial = new THREE.MeshStandardMaterial({ color: 0xfaf6ef, roughness: 0.55 });
@@ -31,8 +48,10 @@ export class Bowling {
 
     // A thin visual surface over the existing ground collider. No raised
     // physical step: the arcade car's vertical position is locked.
-    const lane = new THREE.Mesh(new THREE.BoxGeometry(8, 0.02, 24), laneMaterial);
-    lane.position.set(CENTER.x, 0, CENTER.z);
+    const lane = prefabs.lane ? bowlingVisual(prefabs.lane) :
+      new THREE.Mesh(new THREE.BoxGeometry(8, 0.02, 24), laneMaterial);
+    // Lane models sit on the ground; primitive lane retains its original Y.
+    lane.position.set(CENTER.x, prefabs.lane ? prefabs.lane.colliderSize.y / 2 : 0, CENTER.z);
     lane.receiveShadow = true;
     this.group.add(lane);
 
@@ -57,28 +76,31 @@ export class Bowling {
 
     const line = new THREE.Mesh(new THREE.BoxGeometry(8, 0.015, 0.15), stripeMaterial);
     line.position.set(CENTER.x, 0.02, CENTER.z + 7);
-    this.group.add(line);
+    if (!prefabs.lane) this.group.add(line);
 
     const pinGeometry = new THREE.BoxGeometry(0.55, 1.5, 0.55);
     const stripeGeometry = new THREE.BoxGeometry(0.56, 0.16, 0.56);
     for (let row = 0; row < 4; row++) {
       for (let col = 0; col <= row; col++) {
-        const pin = new THREE.Mesh(pinGeometry, pinMaterial);
-        const stripe = new THREE.Mesh(stripeGeometry, stripeMaterial);
-        stripe.position.y = 0.4;
-        pin.add(stripe);
+        const pin = prefabs.pin ? bowlingVisual(prefabs.pin) : new THREE.Mesh(pinGeometry, pinMaterial);
+        if (!prefabs.pin) {
+          const stripe = new THREE.Mesh(stripeGeometry, stripeMaterial);
+          stripe.position.y = 0.4;
+          pin.add(stripe);
+        }
         this.addActor(physics, pin, new CANNON.Box(new CANNON.Vec3(0.275, 0.75, 0.275)),
           2, CENTER.x + (col - row / 2) * 1.15, 0.77, CENTER.z - 5 - row * 1.1);
       }
     }
 
     this.addActor(physics,
-      new THREE.Mesh(new THREE.SphereGeometry(0.65, 20, 12), ballMaterial),
+      prefabs.ball ? bowlingVisual(prefabs.ball) :
+        new THREE.Mesh(new THREE.SphereGeometry(0.65, 20, 12), ballMaterial),
       new CANNON.Sphere(0.65), 18, CENTER.x, 0.67, CENTER.z + 9);
     this.syncMeshes();
   }
 
-  private addActor(physics: Physics, visual: THREE.Mesh, shape: CANNON.Shape,
+  private addActor(physics: Physics, visual: THREE.Object3D, shape: CANNON.Shape,
     mass: number, x: number, y: number, z: number): void {
     const root = new THREE.Group();
     root.add(visual);

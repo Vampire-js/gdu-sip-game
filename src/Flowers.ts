@@ -4,7 +4,7 @@ import * as THREE from "three";
 export class Flowers {
   readonly group = new THREE.Group();
 
-  constructor(grassGeometry: THREE.BufferGeometry, maxFlowers = 180*2) {
+  constructor(grassGeometry: THREE.BufferGeometry, maxFlowers = 180*10) {
     const positions = grassGeometry.getAttribute("aOffset");
     const count = Math.min(Math.max(0, Math.floor(maxFlowers)), positions?.count ?? 0);
     if (!count) return;
