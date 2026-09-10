@@ -8,6 +8,7 @@ import { Car } from "./Car.ts";
 import { Bowling, inBowlingArea } from "./Bowling.ts";
 import { Grass, createGrass } from "./Grass.ts";
 import { Flowers } from "./Flowers.ts";
+import { Butterflies } from "./Butterflies.ts";
 import { Rocks } from "./Rocks.ts";
 import { Input } from "./Input.ts";
 import { PREFABS, ZONES } from "./manifest.ts";
@@ -99,6 +100,8 @@ const grass: Grass = await createGrass(undefined, (x, z) =>
 world.scene.add(grass.mesh);
 const flowers = new Flowers(grass.mesh.geometry, touchBudget ? 90*6 : 2*180);
 world.scene.add(flowers.group);
+const butterflies = new Butterflies(grass.mesh.geometry, touchBudget ? 24 : 48);
+world.scene.add(butterflies.mesh);
 
 // --- sky sphere ---------------------------------------------------------
 // Large inverted sphere with a vertical gradient shader. Parented via a
@@ -296,6 +299,7 @@ function afterCarStep(): void {
 
 function frame(): void {
   const dt = Math.min(clock.getDelta(), 1 / 15);
+  butterflies.update(dt);
 
   if (!input) {
     world.syncMeshes();
