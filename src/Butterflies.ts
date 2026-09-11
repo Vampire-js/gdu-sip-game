@@ -83,8 +83,8 @@ const vertexShader = /* glsl */ `
   varying float vWing;
   varying float vEdge;
   void main() {
-    float phase = aSeed.x * 6.283185;
-    float speed = 0.3 + aSeed.y * 0.25;
+    float phase = aSeed.x * 6.283185*2.;
+    float speed = 1.5 + aSeed.y * 0.25;
     float orbit = uTime * speed + phase;
     float flap = sin(uTime * (15.0 + aSeed.z * 9.0) + phase) * 0.95;
     vec3 p = position;

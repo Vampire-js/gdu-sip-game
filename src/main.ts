@@ -9,6 +9,7 @@ import { Bowling, inBowlingArea } from "./Bowling.ts";
 import { Grass, createGrass } from "./Grass.ts";
 import { Flowers } from "./Flowers.ts";
 import { Butterflies } from "./Butterflies.ts";
+import { Dolphins } from "./Dolphins.ts";
 import { Rocks } from "./Rocks.ts";
 import { Input } from "./Input.ts";
 import { PREFABS, ZONES } from "./manifest.ts";
@@ -17,6 +18,7 @@ import { World } from "./World.ts";
 import { isOnLevelPath } from "./levelLayout.ts";
 import { StartScreen } from "./StartScreen.ts";
 import { GAME_CONFIG } from "./gameConfig.ts";
+import { addTreeCollider } from "./treeCollider.ts";
 
 const startScreen = new StartScreen(GAME_CONFIG);
 
@@ -102,6 +104,8 @@ const flowers = new Flowers(grass.mesh.geometry, touchBudget ? 90*6 : 2*180);
 world.scene.add(flowers.group);
 const butterflies = new Butterflies(grass.mesh.geometry, touchBudget ? 24 : 48);
 world.scene.add(butterflies.mesh);
+const dolphins = new Dolphins(world.terrain, touchBudget ? 4*2 : 8*2);
+world.scene.add(dolphins.mesh);
 
 // --- sky sphere ---------------------------------------------------------
 // Large inverted sphere with a vertical gradient shader. Parented via a
@@ -208,6 +212,7 @@ new GLTFLoader().load("/models/tree.glb", (gltf) => {
       inBowlingArea(x, z, footprint) ||
       ZONES.some((zone) => Math.hypot(x - zone.position.x, z - zone.position.z) < zone.radius + footprint)) continue;
     world.scene.add(tree);
+    addTreeCollider(tree, physics);
     placed++;
   }
   if (placed < TREE_COUNT) console.warn(`[trees] Placed ${placed}/${TREE_COUNT} trees on dry land.`);
@@ -300,6 +305,7 @@ function afterCarStep(): void {
 function frame(): void {
   const dt = Math.min(clock.getDelta(), 1 / 15);
   butterflies.update(dt);
+  dolphins.update(dt);
 
   if (!input) {
     world.syncMeshes();
