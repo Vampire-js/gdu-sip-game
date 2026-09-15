@@ -16,7 +16,7 @@
   margin: 0;
   max-width: 900px;
   color: #fff0d5;
-  font: 700 clamp(36px, 8vw, 82px)/1.1 system-ui, sans-serif;
+  font: 700 clamp(36px, 8vw, 82px)/1.1 var(--game-font);
   letter-spacing: -0.04em;
   overflow-wrap: anywhere;
   text-shadow: 0 3px 16px #30231570;
@@ -30,7 +30,7 @@
   border-radius: 999px;
   background: #f1d3a0;
   color: #453526;
-  font: 600 20px system-ui, sans-serif;
+  font: 600 20px var(--game-font);
   cursor: pointer;
   touch-action: manipulation;
 }

@@ -40,7 +40,7 @@ export default defineConfig({
         // Precache all the shipped assets so the game boots offline once
         // it's been loaded a first time. GLB and JPG textures are big;
         // caching them saves the second-launch reload.
-        globPatterns: ["**/*.{js,css,html,png,jpg,svg,glb,gltf}"],
+        globPatterns: ["**/*.{js,css,html,png,jpg,svg,glb,gltf,woff2}"],
         globIgnores: ["**/node_modules/**", "sw.js", "workbox-*.js"],
         // three.js chunks are >2MB; bump the default 2MB size limit.
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,

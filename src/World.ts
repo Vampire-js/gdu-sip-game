@@ -8,6 +8,7 @@ import { GardenFence } from "./GardenFence.ts";
 import { inBowlingArea } from "./Bowling.ts";
 import { Zone, type ZoneDef } from "./Zone.ts";
 import { ZonePanels } from "./ZonePanels.ts";
+import { DirectionSigns } from "./DirectionSigns.ts";
 
 /**
  * Static ground + a scatter of dynamic obstacles. Obstacles are either random
@@ -99,6 +100,7 @@ export class World {
     this.buildZones(zoneDefs);
     this.zonePanel = new ZonePanels(zoneDefs);
     this.scene.add(this.zonePanel.group);
+    this.scene.add(new DirectionSigns(this.terrain, physics, zoneDefs).group);
   }
 
   /** Update zone reveal animations against the car's position. */

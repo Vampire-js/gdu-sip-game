@@ -110,8 +110,8 @@ export class Input {
         <button type="button" data-vkey="right" aria-label="Steer right">&#9654;</button>
       </div>
       <div class="pad right">
-        <button type="button" data-vkey="forward" aria-label="Accelerate">&#9650;</button>
         <button type="button" data-vkey="reverse" aria-label="Reverse">&#9660;</button>
+        <button type="button" data-vkey="forward" aria-label="Accelerate">&#9650;</button>
       </div>
     `;
     document.body.appendChild(container);

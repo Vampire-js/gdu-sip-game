@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { ZoneDef } from "./Zone.ts";
+import { gameFont } from "./gameFont.ts";
 
 /** Floating wooden information boards that face the vehicle. */
 export class ZonePanels {
@@ -84,7 +85,7 @@ function createPanelTexture(def: ZoneDef): THREE.CanvasTexture {
   for (; fontSize >= 12; fontSize--) {
     rows = [];
     const section = (text: string, size: number, color: string, gap: number, weight = 500) => {
-      ctx.font = `${weight} ${size}px system-ui, sans-serif`;
+      ctx.font = gameFont(size, weight);
       for (const textLine of wrap(text)) rows.push({ text: textLine, size, color, gap: 0, weight });
       rows[rows.length - 1]!.gap = gap;
     };
@@ -147,7 +148,7 @@ function createPanelTexture(def: ZoneDef): THREE.CanvasTexture {
   ctx.shadowOffsetY = 2;
   let y = 84;
   for (const row of rows) {
-    ctx.font = `${row.weight} ${row.size}px system-ui, sans-serif`;
+    ctx.font = gameFont(row.size, row.weight);
     ctx.fillStyle = row.color;
     ctx.fillText(row.text, 88, y, 824);
     y += row.size * 1.3 + row.gap;

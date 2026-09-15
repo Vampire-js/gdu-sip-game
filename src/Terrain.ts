@@ -2,6 +2,7 @@ import * as THREE from "three";
 import * as CANNON from "cannon-es";
 import { createGroundMaterial } from "./GroundMaterial.ts";
 import { islandRadius, BOWLING_CENTER, BOWLING_ISLAND, CAUSEWAY_WIDTH, distanceToBowlingRoute } from "./levelLayout.ts";
+import { DOMAIN_ISLANDS, DOMAIN_CONNECTIONS, distanceToRoute } from "./levelLayout.ts";
 
 export const WATER_LEVEL = -1.8;
 const SIZE = 300;
@@ -22,6 +23,8 @@ function heightAt(x: number, z: number): number {
     (radius - islandRadius(angle)) / 10,
     (bowlingDistance - 1) * BOWLING_ISLAND.radiusX / 8,
     (distanceToBowlingRoute(x, z) - CAUSEWAY_WIDTH / 2) / 6,
+    ...DOMAIN_ISLANDS.map((island) => (Math.hypot(x - island.x, z - island.z) - island.radius) / 8),
+    ...DOMAIN_CONNECTIONS.map((route) => (distanceToRoute(x, z, route) - CAUSEWAY_WIDTH / 2) / 6),
   );
   const t = THREE.MathUtils.clamp(bankDistance, 0, 1);
   return -8 * t * t * (3 - 2 * t);

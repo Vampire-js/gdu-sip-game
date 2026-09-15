@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { gameFont } from "./gameFont.ts";
 
 /**
  * A trigger zone on the floor that reveals a text label as the car enters.
@@ -12,7 +13,7 @@ import * as THREE from "three";
  *   - ring pulse     (ground marker glows brighter when active)
  *
  * The text is rendered as a `CanvasTexture` on a plane laid flat on the
- * floor — no font files to load, and it stays crisp because we render at
+ * floor — the shared game font is loaded before baking, and we render at
  * 2x DPR. Rotate the whole zone with `facing` so the text reads correctly
  * from the intended approach direction.
  */
@@ -136,7 +137,7 @@ function makeTextTexture(text: string, color: string): THREE.CanvasTexture {
   const padding = 40;
   const lineHeight = fontPx * 1.2;
   const lines = text.split("\n");
-  const font = `bold ${fontPx}px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
+  const font = gameFont(fontPx, 700);
 
   // Measure with a throwaway context so we can size the real canvas exactly.
   const measure = document.createElement("canvas").getContext("2d")!;

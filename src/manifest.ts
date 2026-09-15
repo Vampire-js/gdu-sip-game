@@ -96,17 +96,20 @@ export type PrefabName = keyof typeof PREFABS;
  */
 // Replace these placeholder names and descriptions with the actual domains.
 const DOMAIN_CONTENT = [
-  { title: "Domain 1", description: "Welcome to Domain 1. Discover this domain's activities and opportunities here." },
-  { title: "Domain 2", description: "Welcome to Domain 2. Discover this domain's activities and opportunities here." },
-  { title: "Domain 3", description: "Welcome to Domain 3. Discover this domain's activities and opportunities here." },
-  { title: "Domain 4", description: "Welcome to Domain 4. Discover this domain's activities and opportunities here." },
-  { title: "Domain 5", description: "Welcome to Domain 5. Discover this domain's activities and opportunities here." },
+  { title: "Coding", description: "Welcome to Domain 1. Discover this domain's activities and opportunities here." },
+  { title: "Artificial Intelligence", description: "Welcome to Domain 2. Discover this domain's activities and opportunities here." },
+  { title: "Web Development", description: "The Web Development Domain focuses on building interactive, engaging, and user-friendly web experiences, especially for games and the gaming community. We explore modern web technologies to create game websites, landing pages, portfolios, leaderboards, and other interactive experiences. Through hands-on projects and workshops, members learn about frontend development, UI/UX, backend systems, APIs, and deployment, turning creative ideas into functional web experiences." },
+  { title: "Content", description: `The Content Team is the voice of GDU
+We build stories and visuals to showcase our clubs incredible creations`},
+  { title: "Marketing", description: "Welcome to Domain 5. Discover this domain's activities and opportunities here." },
+  { title: "Design", description: `The Design Domain focuses on the creative and visual side of game development and digital art. We explore 2D and 3D tools to create game-ready assets, environments, characters, and props, while also working on visual projects such as renders, short films, shaders, and other forms of digital art. Through hands-on projects and workshops, members learn the complete process of creating and presenting assets for games as well as standalone visual experiences.` },
+  { title: "Research and Development", description: "Welcome to Domain 7. Discover this domain's activities and opportunities here." },
 ];
 
 export const ZONES: ZoneDef[] = DOMAIN_POINTS.map((point, index) => ({
   position: { x: point.x, z: point.z },
   radius: DOMAIN_RADIUS,
   facing: point.facing,
-  text: `DOMAIN\n${index + 1}`,
+  text: DOMAIN_CONTENT[index].title,
   panel: { ...DOMAIN_CONTENT[index]!, details: ["Return to the centre to explore another domain."] },
 }));

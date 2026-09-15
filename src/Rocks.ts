@@ -2,7 +2,7 @@ import * as THREE from "three";
 import type { Terrain } from "./Terrain.ts";
 import type { ZoneDef } from "./Zone.ts";
 import { inBowlingArea } from "./Bowling.ts";
-import { isOnLevelPath } from "./levelLayout.ts";
+import { isOnLevelPath, isNearSignPost } from "./levelLayout.ts";
 
 /** Small decorative stones: one draw call, no physics or per-frame updates. */
 export class Rocks {
@@ -26,7 +26,7 @@ export class Rocks {
     for (let attempt = 0; attempt < count * 30 && placed < count; attempt++) {
       const x = (random() - 0.5) * 110;
       const z = (random() - 0.5) * 110;
-      if (isOnLevelPath(x, z, 0.6) || inBowlingArea(x, z, 1) ||
+      if (isOnLevelPath(x, z, 0.6) || isNearSignPost(x, z) || inBowlingArea(x, z, 1) ||
         !terrain.isFlatLand(x, z, 0.6) ||
         zones.some((zone) => Math.hypot(x - zone.position.x, z - zone.position.z) < zone.radius + 1)) continue;
 

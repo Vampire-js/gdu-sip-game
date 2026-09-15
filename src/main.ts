@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 import "./style.css";
+import "@fontsource-variable/baloo-2";
 import "./bowling.css";
 import { loadPrefabs } from "./Assets.ts";
 import { Car } from "./Car.ts";
@@ -15,10 +16,12 @@ import { Input } from "./Input.ts";
 import { PREFABS, ZONES } from "./manifest.ts";
 import { Physics } from "./Physics.ts";
 import { World } from "./World.ts";
-import { isOnLevelPath } from "./levelLayout.ts";
+import { isOnLevelPath, isNearSignPost } from "./levelLayout.ts";
 import { StartScreen } from "./StartScreen.ts";
 import { GAME_CONFIG } from "./gameConfig.ts";
 import { addTreeCollider } from "./treeCollider.ts";
+import { loadGameFont } from "./gameFont.ts";
+import { SpawnLetters } from "./SpawnLetters.ts";
 
 const startScreen = new StartScreen(GAME_CONFIG);
 
@@ -50,9 +53,10 @@ document.body.appendChild(renderer.domElement);
 // Simple DOM loading overlay so designers see progress while GLBs stream in.
 // Removed once all prefabs are ready (or immediately if the manifest is empty).
 const overlay = createLoadingOverlay();
-const prefabs = await loadPrefabs(PREFABS, (loaded, total) => {
-  overlay.setProgress(loaded, total);
-});
+const [prefabs] = await Promise.all([
+  loadPrefabs(PREFABS, (loaded, total) => overlay.setProgress(loaded, total)),
+  loadGameFont(JSON.stringify([GAME_CONFIG, ZONES, "Minigame Bowling Play Reset 0123456789"])),
+]);
 overlay.remove();
 
 // Split the loaded prefabs by role. The car is the entry keyed `car`; every
@@ -66,6 +70,8 @@ const obstaclePrefabs = Object.entries(prefabs)
 
 const physics = new Physics();
 const world = new World(physics, obstaclePrefabs, ZONES);
+const spawnLetters = new SpawnLetters(physics, world.terrain);
+world.scene.add(spawnLetters.group);
 const rocks = new Rocks(world.terrain, ZONES);
 world.scene.add(rocks.mesh);
 
@@ -98,7 +104,7 @@ bowlingPanel.querySelector("button")!.addEventListener("click", () => {
 // Placed once at load using the mask at /textures/grass_mask.png.
 // Black in the mask = no grass, white = grass. Grass positions are world-fixed.
 const grass: Grass = await createGrass(undefined, (x, z) =>
-  inBowlingArea(x, z) || !world.terrain.isFlatLand(x, z), touchBudget ? 60_000*2 : undefined);
+  inBowlingArea(x, z) || isNearSignPost(x, z) || !world.terrain.isFlatLand(x, z), touchBudget ? 60_000*2 : undefined);
 world.scene.add(grass.mesh);
 const flowers = new Flowers(grass.mesh.geometry, touchBudget ? 90*6 : 2*180);
 world.scene.add(flowers.group);
@@ -208,6 +214,7 @@ new GLTFLoader().load("/models/tree.glb", (gltf) => {
     bounds.setFromObject(tree);
     const footprint = Math.max(bounds.max.x - bounds.min.x, bounds.max.z - bounds.min.z) / 2;
     if (!world.terrain.isFlatLand(x, z, footprint + 2) ||
+      isNearSignPost(x, z, footprint) ||
       isOnLevelPath(x, z, footprint) ||
       inBowlingArea(x, z, footprint) ||
       ZONES.some((zone) => Math.hypot(x - zone.position.x, z - zone.position.z) < zone.radius + footprint)) continue;
@@ -320,6 +327,7 @@ function frame(): void {
 
   returnedFromWater = false;
   const alpha = physics.step(dt, beforeCarStep, afterCarStep);
+  spawnLetters.syncMeshes();
   bowling.syncMeshes();
   car.syncMesh(alpha);
   const showBowlingPanel = inBowlingArea(car.body.position.x, car.body.position.z);

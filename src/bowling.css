@@ -10,7 +10,7 @@
   border-radius: 10px;
   background: #17232de6;
   color: #fff;
-  font: 13px/1.4 system-ui, sans-serif;
+  font: 15px/1.4 var(--game-font);
 }
 
 .bowling-panel[hidden] {
