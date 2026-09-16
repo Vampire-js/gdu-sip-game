@@ -96,7 +96,7 @@ export type PrefabName = keyof typeof PREFABS;
  */
 // Replace these placeholder names and descriptions with the actual domains.
 const DOMAIN_CONTENT = [
-  { title: "Coding", description: "The Coding Domain focuses on programming logic, gameplay scripting, algorithms, and software development patterns. It covers structural engineering and mathematics designed to translate concepts into interactive applications." },
+  { title: "Coding", description: "The Coding Domain focuses on the technical and interactive side of game development. We use game engines like Unity, Unreal Engine, and Godot to turn ideas into playable experiences, working on gameplay mechanics, systems, player interactions, and game logic. Through hands-on projects, game jams (hackathons), and workshops, members learn how to build, test, and polish games while developing their programming and problem-solving skills." },
   { title: "Artificial Intelligence", description: "The Artificial Intelligence Domain covers pathfinding, decision-making architectures, behavior trees, and procedural generation. It explores agent behavior and algorithmic systems within software environments." },
   { title: "Web Development", description: "The Web Development Domain focuses on building interactive, engaging, and user-friendly web experiences, especially for games and the gaming community. We explore modern web technologies to create game websites, landing pages, portfolios, leaderboards, and other interactive experiences. Through hands-on projects and workshops, members learn about frontend development, UI/UX, backend systems, APIs, and deployment, turning creative ideas into functional web experiences." },
   { title: "Content", description: `The Content Team is the voice of GDU
