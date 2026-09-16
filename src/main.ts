@@ -93,10 +93,6 @@ bowlingPanel.innerHTML = `<strong>Bowling</strong>
   <button type="button" disabled>Reset bowling</button>`;
 document.body.appendChild(bowlingPanel);
 bowlingPanel.querySelector("button")!.addEventListener("click", () => {
-  // Move the car clear before restoring the ball and pins.
-  car.reset();
-  car.syncMesh();
-  snapCameraBehindCar();
   bowling.reset();
 });
 
