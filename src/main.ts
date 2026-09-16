@@ -104,7 +104,7 @@ bowlingPanel.querySelector("button")!.addEventListener("click", () => {
 // Placed once at load using the mask at /textures/grass_mask.png.
 // Black in the mask = no grass, white = grass. Grass positions are world-fixed.
 const grass: Grass = await createGrass(undefined, (x, z) =>
-  inBowlingArea(x, z) || isNearSignPost(x, z) || !world.terrain.isFlatLand(x, z), touchBudget ? 60_000*2 : undefined);
+  inBowlingArea(x, z) || isNearSignPost(x, z) || !world.terrain.isFlatLand(x, z), touchBudget ? 30_000*2 : undefined);
 world.scene.add(grass.mesh);
 const flowers = new Flowers(grass.mesh.geometry, touchBudget ? 90*6 : 2*180);
 world.scene.add(flowers.group);

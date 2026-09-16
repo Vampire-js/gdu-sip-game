@@ -96,14 +96,14 @@ export type PrefabName = keyof typeof PREFABS;
  */
 // Replace these placeholder names and descriptions with the actual domains.
 const DOMAIN_CONTENT = [
-  { title: "Coding", description: "Welcome to Domain 1. Discover this domain's activities and opportunities here." },
-  { title: "Artificial Intelligence", description: "Welcome to Domain 2. Discover this domain's activities and opportunities here." },
+  { title: "Coding", description: "The Coding Domain focuses on programming logic, gameplay scripting, algorithms, and software development patterns. It covers structural engineering and mathematics designed to translate concepts into interactive applications." },
+  { title: "Artificial Intelligence", description: "The Artificial Intelligence Domain covers pathfinding, decision-making architectures, behavior trees, and procedural generation. It explores agent behavior and algorithmic systems within software environments." },
   { title: "Web Development", description: "The Web Development Domain focuses on building interactive, engaging, and user-friendly web experiences, especially for games and the gaming community. We explore modern web technologies to create game websites, landing pages, portfolios, leaderboards, and other interactive experiences. Through hands-on projects and workshops, members learn about frontend development, UI/UX, backend systems, APIs, and deployment, turning creative ideas into functional web experiences." },
   { title: "Content", description: `The Content Team is the voice of GDU
 We build stories and visuals to showcase our clubs incredible creations`},
-  { title: "Marketing", description: "Welcome to Domain 5. Discover this domain's activities and opportunities here." },
+  { title: "Marketing", description: "The Marketing Domain deals with audience communication, public relations, product visibility, and social analytics. It examines strategy, campaign structuring, and community engagement principles." },
   { title: "Design", description: `The Design Domain focuses on the creative and visual side of game development and digital art. We explore 2D and 3D tools to create game-ready assets, environments, characters, and props, while also working on visual projects such as renders, short films, shaders, and other forms of digital art. Through hands-on projects and workshops, members learn the complete process of creating and presenting assets for games as well as standalone visual experiences.` },
-  { title: "Research and Development", description: "Welcome to Domain 7. Discover this domain's activities and opportunities here." },
+  { title: "Research and Development", description: "The Research and Development Domain represents physics simulation, experimental prototyping, performance profiling, and tech pipeline investigation including emerging virtual interface technologies." },
 ];
 
 export const ZONES: ZoneDef[] = DOMAIN_POINTS.map((point, index) => ({

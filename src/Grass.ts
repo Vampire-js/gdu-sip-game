@@ -20,7 +20,7 @@ import { GRASS_MASK } from "./grassMask.ts";
  */
 
 const GROUND_SIZE = GRASS_MASK.size;
-const CANDIDATE_COUNT = 2*60000; // Random points tried against the mask.
+const CANDIDATE_COUNT = 2*20000; // Random points tried against the mask.
 const THRESHOLD = GRASS_MASK.threshold;
 
 // Grass load is async because we have to fetch and decode the mask PNG.
