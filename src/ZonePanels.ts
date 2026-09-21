@@ -57,7 +57,7 @@ export class ZonePanels {
 }
 
 /** Paint once at startup, never per frame. Copy stays in the zone manifest. */
-function createPanelTexture(def: ZoneDef): THREE.CanvasTexture {
+export function createPanelTexture(def: Pick<ZoneDef, "text" | "panel">): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
   canvas.width = 1000;
   canvas.height = 760;

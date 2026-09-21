@@ -37,6 +37,7 @@ export class Car {
 
   /** Half-height for spawn placement, derived from the collider size. */
   private readonly halfHeight: number;
+  private readonly spawn: { x: number; z: number };
 
   /** Wheel meshes rolled around their local X axis each frame. Populated
    *  from either the primitive setup or by traversing a prefab for children
@@ -48,7 +49,8 @@ export class Car {
 
   private static readonly DEFAULT_SIZE = { x: 1.5, y: 0.6, z: 2.6 };
 
-  constructor(cannonMaterial: CANNON.Material, prefab?: Prefab) {
+  constructor(cannonMaterial: CANNON.Material, prefab?: Prefab, spawn = { x: 0, z: 0 }) {
+    this.spawn = { ...spawn };
     // Resolve dimensions: prefab collider first, otherwise defaults.
     const size = prefab
       ? {
@@ -141,7 +143,7 @@ export class Car {
       shape: createCarCollider(size),
       // Spawn at exact rest height. Y is locked (see linearFactor below), so
       // this becomes the car's permanent Y.
-      position: new CANNON.Vec3(0, this.halfHeight, 0),
+      position: new CANNON.Vec3(this.spawn.x, this.halfHeight, this.spawn.z),
       // No linear damping: we overwrite XZ velocity each frame from our own
       // scalar `speed` (which has its own coastDecel). Extra damping here
       // just makes the car feel sluggish and unresponsive.
@@ -231,7 +233,7 @@ export class Car {
 
   reset(): void {
     this.speed = 0;
-    this.body.position.set(0, this.halfHeight, 0);
+    this.body.position.set(this.spawn.x, this.halfHeight, this.spawn.z);
     this.body.velocity.set(0, 0, 0);
     this.body.angularVelocity.set(0, 0, 0);
     this.body.quaternion.set(0, 0, 0, 1);

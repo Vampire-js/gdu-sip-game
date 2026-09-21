@@ -2,9 +2,10 @@ import * as THREE from "three";
 import * as CANNON from "cannon-es";
 import type { Physics } from "./Physics.ts";
 import type { Terrain } from "./Terrain.ts";
+import { PLAYER_SPAWN } from "./levelLayout.ts";
 
-const X = -5.5;
-const Z = -1.5;
+const X = PLAYER_SPAWN.x - 5.5;
+const Z = PLAYER_SPAWN.z - 1.5;
 const LETTER_HEIGHT = 1.65;
 const DEPTH = 0.65;
 const LETTER_MASS = 3; // Lightweight props, compared with the 150 kg car.

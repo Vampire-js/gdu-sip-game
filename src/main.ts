@@ -14,10 +14,11 @@ import { Butterflies } from "./Butterflies.ts";
 import { Dolphins } from "./Dolphins.ts";
 import { Rocks } from "./Rocks.ts";
 import { Input } from "./Input.ts";
-import { PREFABS, ZONES } from "./manifest.ts";
+import { PREFABS, ZONES, BANNERS } from "./manifest.ts";
 import { Physics } from "./Physics.ts";
 import { World } from "./World.ts";
-import { isOnLevelPath, isNearSignPost } from "./levelLayout.ts";
+import { isOnLevelPath, isNearSignPost, PLAYER_SPAWN } from "./levelLayout.ts";
+import { InfoBanners } from "./InfoBanners.ts";
 import { StartScreen } from "./StartScreen.ts";
 import { GAME_CONFIG } from "./gameConfig.ts";
 import { addTreeCollider } from "./treeCollider.ts";
@@ -56,7 +57,7 @@ document.body.appendChild(renderer.domElement);
 const overlay = createLoadingOverlay();
 const [prefabs] = await Promise.all([
   loadPrefabs(PREFABS, (loaded, total) => overlay.setProgress(loaded, total)),
-  loadGameFont(JSON.stringify([GAME_CONFIG, ZONES, "Minigame Bowling Play Reset 0123456789"])),
+  loadGameFont(JSON.stringify([GAME_CONFIG, ZONES, BANNERS, "Minigame Bowling Play Reset 0123456789"])),
 ]);
 overlay.remove();
 
@@ -71,12 +72,13 @@ const obstaclePrefabs = Object.entries(prefabs)
 
 const physics = new Physics();
 const world = new World(physics, obstaclePrefabs, ZONES);
+world.scene.add(new InfoBanners(BANNERS, world.terrain, physics).group);
 const spawnLetters = new SpawnLetters(physics, world.terrain);
 world.scene.add(spawnLetters.group);
 const rocks = new Rocks(world.terrain, ZONES);
 world.scene.add(rocks.mesh);
 
-const car = new Car(physics.carMaterial, carPrefab);
+const car = new Car(physics.carMaterial, carPrefab, PLAYER_SPAWN);
 world.scene.add(car.mesh);
 physics.world.addBody(car.body);
 
@@ -101,7 +103,7 @@ bowlingPanel.querySelector("button")!.addEventListener("click", () => {
 // Placed once at load using the mask at /textures/grass_mask.png.
 // Black in the mask = no grass, white = grass. Grass positions are world-fixed.
 const grass: Grass = await createGrass(undefined, (x, z) =>
-  inBowlingArea(x, z) || isNearSignPost(x, z) || !world.terrain.isFlatLand(x, z), touchBudget ? 30_000*2 : undefined);
+  inBowlingArea(x, z) || isNearSignPost(x, z) || !world.terrain.isFlatLand(x, z), touchBudget ? 16_000 : undefined);
 world.scene.add(grass.mesh);
 const flowers = new Flowers(grass.mesh.geometry, touchBudget ? 90*6 : 2*180);
 world.scene.add(flowers.group);

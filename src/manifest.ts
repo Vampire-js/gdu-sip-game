@@ -1,6 +1,10 @@
 import type { PrefabDef } from "./Assets.ts";
 import type { ZoneDef } from "./Zone.ts";
 import { DOMAIN_POINTS, DOMAIN_RADIUS } from "./levelLayout.ts";
+import { INTRO_ZONE_POINTS, INTRO_ZONE_RADIUS, INFO_ZONE_POINTS, INFO_ZONE_RADIUS,
+  GLITCHED_ISLAND, BANNER_POINTS } from "./levelLayout.ts";
+import { INTRO_CONTENT, INDUSTRY_CONTENT, INFORMATION_CONTENT, GLITCHED_CONTENT } from "./infoContent.ts";
+import type { BannerDef } from "./InfoBanners.ts";
 
 /**
  * ============================================================================
@@ -106,10 +110,32 @@ We build stories and visuals to showcase our clubs incredible creations`},
   { title: "Research and Development", description: "The Research and Development Domain represents physics simulation, experimental prototyping, performance profiling, and tech pipeline investigation including emerging virtual interface technologies." },
 ];
 
-export const ZONES: ZoneDef[] = DOMAIN_POINTS.map((point, index) => ({
+export const DOMAIN_ZONES: ZoneDef[] = DOMAIN_POINTS.map((point, index) => ({
   position: { x: point.x, z: point.z },
   radius: DOMAIN_RADIUS,
   facing: point.facing,
   text: DOMAIN_CONTENT[index].title,
   panel: { ...DOMAIN_CONTENT[index]!, details: ["Return to the centre to explore another domain."] },
+}));
+
+export const INTRO_ZONES: ZoneDef[] = INTRO_ZONE_POINTS.map((position, index) => ({
+  position, radius: INTRO_ZONE_RADIUS, markerRadius: 3.5,
+  text: INTRO_CONTENT[index]!.title, panel: INTRO_CONTENT[index]!,
+}));
+
+export const INFORMATION_ZONES: ZoneDef[] = INFO_ZONE_POINTS.map((position, index) => ({
+  position, radius: INFO_ZONE_RADIUS, text: INFORMATION_CONTENT[index]!.title, panel: INFORMATION_CONTENT[index]!,
+}));
+
+// Domain entries remain first because directional signs resolve them by index.
+export const ZONES: ZoneDef[] = [
+  ...DOMAIN_ZONES, ...INTRO_ZONES, ...INFORMATION_ZONES,
+  { position: { x: GLITCHED_ISLAND.x, z: GLITCHED_ISLAND.z }, radius: 8,
+    text: "Glitched", panel: GLITCHED_CONTENT },
+];
+
+// Always-visible world-space signs, deliberately NOT proximity zones.
+export const BANNERS: BannerDef[] = BANNER_POINTS.map((point, index) => ({
+  position: { x: point.x, z: point.z }, facing: point.facing,
+  content: INDUSTRY_CONTENT[index]!,
 }));

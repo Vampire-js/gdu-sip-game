@@ -80,13 +80,17 @@ export class Grass {
   };
 
   constructor(mask: Mask, exclude?: (x: number, z: number) => boolean, candidateCount = CANDIDATE_COUNT) {
-    // --- Cull candidates against the mask ---
-    // Reject early with a threshold. Pure random distribution: no jitter grid,
-    // no poisson, just Math.random() * ground.
+    // Sample eligible mask pixels instead of wasting most attempts on water.
+    // Equal-sized pixels keep density uniform across islands of different sizes.
+    const eligible: number[] = [];
+    for (let pixel = 0; pixel < mask.width * mask.height; pixel++) {
+      if (mask.data[pixel * 4]! > THRESHOLD) eligible.push(pixel);
+    }
     const positions: number[] = []; // flat [x0, z0, yaw0, var0, x1, z1, ...]
-    for (let i = 0; i < candidateCount; i++) {
-      const x = (Math.random() - 0.5) * GROUND_SIZE;
-      const z = (Math.random() - 0.5) * GROUND_SIZE;
+    for (let i = 0; i < candidateCount && eligible.length > 0; i++) {
+      const pixel = eligible[Math.floor(Math.random() * eligible.length)]!;
+      const x = ((pixel % mask.width + Math.random()) / mask.width - 0.5) * GROUND_SIZE;
+      const z = ((Math.floor(pixel / mask.width) + Math.random()) / mask.height - 0.5) * GROUND_SIZE;
       if (exclude?.(x, z)) continue;
       if (sampleMask(mask, x, z) <= THRESHOLD) continue;
       positions.push(x, z, Math.random() * Math.PI * 2, Math.random());
@@ -135,8 +139,8 @@ export class Grass {
     console.log(
       "[grass] placed %d blades (from %d candidates, %.1f%% survived)",
       bladeCount,
-      CANDIDATE_COUNT,
-      (bladeCount / CANDIDATE_COUNT) * 100
+      candidateCount,
+      candidateCount > 0 ? (bladeCount / candidateCount) * 100 : 0
     );
   }
 

@@ -3,10 +3,11 @@ import * as CANNON from "cannon-es";
 import { createGroundMaterial } from "./GroundMaterial.ts";
 import { islandRadius, BOWLING_CENTER, BOWLING_ISLAND, CAUSEWAY_WIDTH, distanceToBowlingRoute } from "./levelLayout.ts";
 import { DOMAIN_ISLANDS, DOMAIN_CONNECTIONS, distanceToRoute } from "./levelLayout.ts";
+import { STORY_ISLANDS, STORY_BRIDGES } from "./levelLayout.ts";
 
 export const WATER_LEVEL = -1.8;
-const SIZE = 300;
-const SEGMENTS = 150;
+const SIZE = 420;
+const SEGMENTS = 210; // Preserve the 2m collision grid on the expanded map.
 const STEP = SIZE / SEGMENTS;
 const HALF = SIZE / 2;
 
@@ -25,6 +26,8 @@ function heightAt(x: number, z: number): number {
     (distanceToBowlingRoute(x, z) - CAUSEWAY_WIDTH / 2) / 6,
     ...DOMAIN_ISLANDS.map((island) => (Math.hypot(x - island.x, z - island.z) - island.radius) / 8),
     ...DOMAIN_CONNECTIONS.map((route) => (distanceToRoute(x, z, route) - CAUSEWAY_WIDTH / 2) / 6),
+    ...STORY_ISLANDS.map((island) => (Math.hypot(x - island.x, z - island.z) - island.radius) / 6),
+    ...STORY_BRIDGES.map((bridge) => (distanceToRoute(x, z, bridge.points) - bridge.width / 2) / 4),
   );
   const t = THREE.MathUtils.clamp(bankDistance, 0, 1);
   return -8 * t * t * (3 - 2 * t);

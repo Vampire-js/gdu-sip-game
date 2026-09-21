@@ -22,6 +22,8 @@ export interface ZoneDef {
   position: { x: number; z: number };
   /** Radius in metres. Car reveals text as it approaches within this range. */
   radius: number;
+  /** Optional smaller floor marker for narrow bridges; trigger radius is unchanged. */
+  markerRadius?: number;
   /** Text to reveal. Use `\n` for line breaks. */
   text: string;
   /** Optional panel copy, independent of the floor label. */
@@ -65,7 +67,7 @@ export class Zone {
       depthWrite: false,
     });
     this.ringMesh = new THREE.Mesh(
-      new THREE.RingGeometry(def.radius * 0.94, def.radius, 64),
+      new THREE.RingGeometry((def.markerRadius ?? def.radius) * 0.94, def.markerRadius ?? def.radius, 64),
       this.ringMaterial
     );
     this.ringMesh.rotation.x = -Math.PI / 2;
