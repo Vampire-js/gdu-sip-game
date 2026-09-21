@@ -107,7 +107,7 @@ const DOMAIN_CONTENT = [
 We build stories and visuals to showcase our clubs incredible creations`},
   { title: "Marketing", description: "The Marketing Domain deals with audience communication, public relations, product visibility, and social analytics. It examines strategy, campaign structuring, and community engagement principles." },
   { title: "Design", description: `The Design Domain focuses on the creative and visual side of game development and digital art. We explore 2D and 3D tools to create game-ready assets, environments, characters, and props, while also working on visual projects such as renders, short films, shaders, and other forms of digital art. Through hands-on projects and workshops, members learn the complete process of creating and presenting assets for games as well as standalone visual experiences.` },
-  { title: "Research and Development", description: "The Research and Development Domain represents physics simulation, experimental prototyping, performance profiling, and tech pipeline investigation including emerging virtual interface technologies." },
+  { title: "Research and Development", description: "The Research and Development Domain represents physics simulation, experimental prototyping, performance profiling, tech pipeline investigation including emerging virtual interface technologies and much more!" },
 ];
 
 export const DOMAIN_ZONES: ZoneDef[] = DOMAIN_POINTS.map((point, index) => ({
