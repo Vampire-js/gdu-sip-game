@@ -79,11 +79,12 @@ export class Zone {
     // --- Floor text.
     const tex = makeTextTexture(def.text, def.color ?? "#000000");
     const aspect = tex.image.width / tex.image.height;
-    // Fit the text to about 65% of the zone's diameter so it stays inside
+    // Fit the text to about 65% of the visible marker diameter so it stays inside
     // the ring at max scale. Long text will shrink, short text won't grow
     // beyond a sensible readable size.
-    const maxHeight = Math.min(def.radius * 0.7, 3);
-    const planeHeight = Math.min(maxHeight, (def.radius * 1.3) / aspect);
+    const markerRadius = def.markerRadius ?? def.radius;
+    const maxHeight = Math.min(markerRadius * 0.7, 3);
+    const planeHeight = Math.min(maxHeight, (markerRadius * 1.3) / aspect);
     const planeWidth = planeHeight * aspect;
 
     this.textMaterial = new THREE.MeshBasicMaterial({
