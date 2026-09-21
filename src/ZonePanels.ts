@@ -2,7 +2,7 @@ import * as THREE from "three";
 import type { ZoneDef } from "./Zone.ts";
 import { gameFont } from "./gameFont.ts";
 
-/** Floating wooden information boards that face the vehicle. */
+/** Floating boards triggered by the vehicle and facing the viewing camera. */
 export class ZonePanels {
   readonly group = new THREE.Group();
   private readonly boards: Array<{
@@ -35,7 +35,7 @@ export class ZonePanels {
     }
   }
 
-  update(dt: number, position: { x: number; z: number }): void {
+  update(dt: number, position: { x: number; z: number }, viewPosition = position): void {
     for (const board of this.boards) {
       const distance = Math.hypot(position.x - board.def.position.x, position.z - board.def.position.z);
       board.inside = distance <= board.def.radius + (board.inside ? 0.8 : 0);
@@ -48,9 +48,9 @@ export class ZonePanels {
       panel.position.y = panel.geometry.parameters.height / 2 + 0.1 + eased * 1.5;
       panel.material.opacity = eased;
       panel.visible = board.progress > 0;
-      // Rotate only around Y: face the vehicle without tilting the text down.
-      const dx = position.x - panel.position.x;
-      const dz = position.z - panel.position.z;
+      // Keep text upright and readable while the player pans around the car.
+      const dx = viewPosition.x - panel.position.x;
+      const dz = viewPosition.z - panel.position.z;
       if (dx * dx + dz * dz > 0.0001) panel.rotation.y = Math.atan2(dx, dz);
     }
   }

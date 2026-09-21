@@ -104,9 +104,9 @@ export class World {
   }
 
   /** Update zone reveal animations against the car's position. */
-  updateZones(dt: number, carPos: THREE.Vector3): void {
+  updateZones(dt: number, carPos: THREE.Vector3, viewPosition: THREE.Vector3 = carPos): void {
     for (const zone of this.zones) zone.update(dt, carPos);
-    this.zonePanel.update(dt, carPos);
+    this.zonePanel.update(dt, carPos, viewPosition);
   }
 
   /** Keep the sun (and its shadow camera) centered on the car. */

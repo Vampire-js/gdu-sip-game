@@ -6,6 +6,7 @@ import "@fontsource-variable/baloo-2";
 import "./bowling.css";
 import { loadPrefabs } from "./Assets.ts";
 import { Car } from "./Car.ts";
+import { CameraRig } from "./CameraRig.ts";
 import { Bowling, inBowlingArea } from "./Bowling.ts";
 import { Grass, createGrass } from "./Grass.ts";
 import { Flowers } from "./Flowers.ts";
@@ -245,22 +246,13 @@ let input: Input | null = null;
 
 // --- follow-camera state --------------------------------------------------
 
-const CAM_HEIGHT = 4.5;
-const CAM_DISTANCE = 8;
-const CAM_LOOKAHEAD = 4;
-
-const camDesiredPos = new THREE.Vector3();
-const camDesiredTarget = new THREE.Vector3();
-const camTarget = new THREE.Vector3();
 const tmpForward = new THREE.Vector3();
-const tmpOffset = new THREE.Vector3();
+const cameraRig = new CameraRig(camera, renderer.domElement,
+  (x, z) => world.terrain.getHeight(x, z));
 
 function snapCameraBehindCar(): void {
   car.getForward(tmpForward);
-  tmpOffset.set(-tmpForward.x * CAM_DISTANCE, CAM_HEIGHT, -tmpForward.z * CAM_DISTANCE);
-  camera.position.copy(car.mesh.position).add(tmpOffset);
-  camTarget.copy(car.mesh.position).addScaledVector(tmpForward, CAM_LOOKAHEAD);
-  camera.lookAt(camTarget);
+  cameraRig.reset(car.mesh.position, tmpForward);
 }
 car.syncMesh();
 world.focusOn(car.mesh.position);
@@ -270,6 +262,12 @@ bowlingPanel.querySelector("button")!.disabled = false;
 // --- HUD ------------------------------------------------------------------
 
 const speedEl = document.getElementById("speed");
+const resetView = document.createElement("button");
+resetView.type = "button";
+resetView.textContent = "Reset view";
+resetView.style.cssText = "pointer-events:auto;min-height:44px;margin-top:8px;padding:8px 16px;border:0;border-radius:12px;background:#f1d3a0;color:#453526;font:inherit;touch-action:manipulation;cursor:pointer";
+resetView.addEventListener("click", snapCameraBehindCar);
+document.getElementById("hud")!.appendChild(resetView);
 
 // --- resize ---------------------------------------------------------------
 
@@ -319,7 +317,8 @@ function frame(): void {
   }
 
   input.update();
-  if (input.consumeReset()) car.reset();
+  const resetRequested = input.consumeReset();
+  if (resetRequested) car.reset();
 
   returnedFromWater = false;
   const alpha = physics.step(dt, beforeCarStep, afterCarStep);
@@ -330,29 +329,17 @@ function frame(): void {
   if (bowlingPanel.hidden === showBowlingPanel) {
     bowlingPanel.hidden = !showBowlingPanel;
   }
-  if (returnedFromWater) snapCameraBehindCar();
+  if (returnedFromWater || resetRequested) snapCameraBehindCar();
   world.syncMeshes();
-  world.updateZones(dt, car.mesh.position);
   world.focusOn(car.mesh.position);
 
   car.getForward(tmpForward);
-  tmpOffset.set(
-    -tmpForward.x * CAM_DISTANCE,
-    CAM_HEIGHT,
-    -tmpForward.z * CAM_DISTANCE
-  );
-  camDesiredPos.copy(car.mesh.position).add(tmpOffset);
-  camDesiredTarget.copy(car.mesh.position).addScaledVector(tmpForward, CAM_LOOKAHEAD);
+  cameraRig.update(dt, car.mesh.position, tmpForward);
+  world.updateZones(dt, car.mesh.position, camera.position);
 
   // Keep the sky sphere centered on the camera so you can't reach its edge.
   sky.position.copy(camera.position);
   grass.update(dt);
-
-  const posAlpha = 1 - Math.exp(-dt / 0.15);
-  const lookAlpha = 1 - Math.exp(-dt / 0.1);
-  camera.position.lerp(camDesiredPos, posAlpha);
-  camTarget.lerp(camDesiredTarget, lookAlpha);
-  camera.lookAt(camTarget);
 
   hudTick += dt;
   if (speedEl && hudTick > 0.1) {
@@ -368,6 +355,7 @@ renderer.setAnimationLoop(frame);
 startScreen.ready(() => {
   clock.getDelta(); // Discard time spent on the title screen.
   input = new Input();
+  cameraRig.enabled = true;
 });
 
 // --- helpers -------------------------------------------------------------

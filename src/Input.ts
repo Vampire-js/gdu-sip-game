@@ -55,6 +55,11 @@ export class Input {
   }
 
   private onKeyDown = (e: KeyboardEvent): void => {
+    // Leave typing and native button activation available to the UI.
+    if (e.target instanceof HTMLElement) {
+      if (e.target.closest("input, textarea, select, [contenteditable='true']")) return;
+      if (e.target.closest("button") && (e.key === " " || e.key === "Enter")) return;
+    }
     const key = this.mapKey(e.key);
     if (key) {
       this.active.add(key);
