@@ -1,4 +1,6 @@
 import * as THREE from "three";
+const CAMERA_HEIGHT = 3.2;
+const LOOK_HEIGHT = 2.2;
 /** Original chase camera with a screen-space drag offset. No orbit or zoom. */
 export class CameraRig {
   enabled = false;
@@ -68,9 +70,10 @@ export class CameraRig {
     this.pan.set(0, 0, 0);
     this.appliedPan.set(0, 0, 0);
     this.desiredPosition.copy(carPosition).addScaledVector(forward, -8);
-    this.desiredPosition.y += 4.5;
+    this.desiredPosition.y += CAMERA_HEIGHT;
     this.camera.position.copy(this.desiredPosition);
     this.target.copy(carPosition).addScaledVector(forward, 4);
+    this.target.y += LOOK_HEIGHT;
     this.keepAboveTerrain();
   }
 
@@ -79,8 +82,9 @@ export class CameraRig {
     this.camera.position.sub(this.appliedPan);
     this.target.sub(this.appliedPan);
     this.desiredPosition.copy(carPosition).addScaledVector(forward, -8);
-    this.desiredPosition.y += 4.5;
+    this.desiredPosition.y += CAMERA_HEIGHT;
     this.desiredTarget.copy(carPosition).addScaledVector(forward, 4);
+    this.desiredTarget.y += LOOK_HEIGHT;
     this.camera.position.lerp(this.desiredPosition, 1 - Math.exp(-dt / 0.15));
     this.target.lerp(this.desiredTarget, 1 - Math.exp(-dt / 0.1));
     this.appliedPan.lerp(this.pan, 1 - Math.exp(-dt / 0.06));
